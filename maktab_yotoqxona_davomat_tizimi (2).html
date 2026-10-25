@@ -1,0 +1,2353 @@
+<!DOCTYPE html>
+<html lang="uz" class="h-full bg-slate-50">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Maktab Yotoqxona Davomat Tizimi</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- SheetJS for Excel Export -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <!-- Chart.js for Visual Reports -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Supabase cloud storage and authentication -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="./supabase-config.js"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#eef2ff',
+              100: '#e0e7ff',
+              500: '#6366f1',
+              600: '#4f46e5',
+              700: '#4338ca',
+              800: '#3730a3',
+              900: '#312e81',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Custom scrollbar styling for dense table navigation */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+    .glass-card {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(8px);
+    }
+    .status-widget {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 8px;
+      min-width: 220px;
+    }
+    .status-label {
+      font-size: 13px;
+      font-weight: 700;
+      color: #475569;
+      letter-spacing: 0.01em;
+    }
+    .status-btn {
+      min-width: 88px;
+      border-radius: 12px;
+      border: 1px solid transparent;
+      transition: all 0.2s ease;
+      box-shadow: none;
+      font-weight: 700;
+      padding: 0.55rem 0.8rem;
+      line-height: 1;
+    }
+    .status-btn:hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
+    }
+    .status-btn.bg-emerald-500 {
+      background: linear-gradient(135deg, #22c55e, #16a34a);
+      color: white;
+      border-color: rgba(22, 163, 74, 0.2);
+    }
+    .status-btn.bg-rose-500 {
+      background: linear-gradient(135deg, #f87171, #ef4444);
+      color: white;
+      border-color: rgba(239, 68, 68, 0.2);
+    }
+    .status-btn.bg-amber-500 {
+      background: linear-gradient(135deg, #fbbf24, #f59e0b);
+      color: white;
+      border-color: rgba(245, 158, 11, 0.2);
+    }
+    .status-btn.text-slate-600 {
+      background: #f8fafc;
+      color: #475569;
+      border-color: #e2e8f0;
+    }
+    /* Disable text selection on attendance toggles */
+    .no-select {
+      user-select: none;
+    }
+    .monthly-summary {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 14px;
+      margin-top: 8px;
+    }
+    .monthly-status-card {
+      border-radius: 18px;
+      padding: 16px 18px;
+      min-height: 88px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      border: 1px solid rgba(148, 163, 184, 0.2);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25);
+    }
+    .monthly-status-card.keldi {
+      background: linear-gradient(135deg, #dff7ec, #c9f0d7);
+      color: #157a45;
+    }
+    .monthly-status-card.kelmadi {
+      background: linear-gradient(135deg, #fbe3e6, #f7d4d9);
+      color: #b42318;
+    }
+    .monthly-status-card.sababli {
+      background: linear-gradient(135deg, #fef3cd, #f6e1a6);
+      color: #a16207;
+    }
+    .monthly-status-card .value {
+      font-size: 2rem;
+      line-height: 1;
+      font-weight: 800;
+      letter-spacing: -0.05em;
+    }
+    .monthly-status-card .label {
+      margin-top: 6px;
+      font-size: 0.9rem;
+      font-weight: 700;
+    }
+    .profile-mini-btn {
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      border: 1px solid #c7d2fe;
+      background: #eef2ff;
+      color: #4f46e5;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      transition: all 0.2s ease;
+    }
+    .profile-mini-btn:hover {
+      background: #e0e7ff;
+      transform: translateY(-1px);
+    }
+    @media (max-width: 900px) {
+      .monthly-summary {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+  </style>
+</head>
+<body class="h-full font-sans text-slate-800 antialiased flex flex-col md:flex-row bg-slate-100">
+
+  <!-- Sidebar Navigation -->
+  <aside class="w-full md:w-64 bg-slate-900 text-white flex-shrink-0 flex flex-col justify-between shadow-xl z-20">
+    <div>
+      <!-- Header / Logo -->
+      <div class="p-5 flex items-center gap-3 border-b border-slate-800">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-500 to-purple-500 flex items-center justify-center text-white shadow-lg shadow-indigo-500/30">
+          <i class="fa-solid font-bold fa-building-user text-xl"></i>
+        </div>
+        <div>
+          <h1 class="font-bold text-base leading-tight tracking-wide text-white">Yotoqxona Davomat</h1>
+          <p class="text-xs text-indigo-400 font-medium">Boshqaruv Tizimi <span class="bg-indigo-500/20 text-indigo-300 px-1.5 py-0.5 rounded text-[10px] ml-1">DEMO</span></p>
+        </div>
+      </div>
+
+      <!-- Navigation Links -->
+      <nav class="p-4 space-y-1.5" id="main-nav">
+        <button onclick="switchTab('dashboard')" id="nav-dashboard" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-sm transition-all duration-200 bg-indigo-600 text-white shadow-md shadow-indigo-600/30">
+          <i class="fa-solid fa-chart-pie w-5 text-center text-lg"></i>
+          <span>Bosh sahifa</span>
+        </button>
+
+        <button onclick="switchTab('daily')" id="nav-daily" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-sm transition-all duration-200 text-slate-400 hover:bg-slate-800 hover:text-slate-200">
+          <i class="fa-solid fa-calendar-check w-5 text-center text-lg"></i>
+          <span>Kunlik davomat</span>
+        </button>
+
+        <button onclick="switchTab('monthly')" id="nav-monthly" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-sm transition-all duration-200 text-slate-400 hover:bg-slate-800 hover:text-slate-200">
+          <i class="fa-solid fa-table-cells w-5 text-center text-lg"></i>
+          <span>Oylik davomat</span>
+        </button>
+
+        <button onclick="switchTab('students')" id="nav-students" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-sm transition-all duration-200 text-slate-400 hover:bg-slate-800 hover:text-slate-200">
+          <i class="fa-solid fa-users w-5 text-center text-lg"></i>
+          <span>O‘quvchilar</span>
+        </button>
+
+        <button onclick="switchTab('birthdays')" id="nav-birthdays" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-sm transition-all duration-200 text-slate-400 hover:bg-slate-800 hover:text-slate-200">
+          <i class="fa-solid fa-cake-candles w-5 text-center text-lg"></i>
+          <span>Tug‘ilgan kunlar</span>
+        </button>
+
+        <button onclick="switchTab('reports')" id="nav-reports" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-sm transition-all duration-200 text-slate-400 hover:bg-slate-800 hover:text-slate-200">
+          <i class="fa-solid fa-file-invoice w-5 text-center text-lg"></i>
+          <span>Hisobotlar</span>
+        </button>
+      </nav>
+    </div>
+
+    <!-- Footer System Status -->
+    <div class="p-4 border-t border-slate-800 text-xs text-slate-400">
+      <div class="flex items-center gap-2 mb-2">
+        <span id="cloud-status-dot" class="w-2 h-2 rounded-full bg-amber-400"></span>
+        <span id="cloud-status-text">Qurilmada saqlanmoqda</span>
+      </div>
+      <div class="flex flex-wrap gap-x-3 gap-y-1 mb-2">
+        <button type="button" onclick="exportLocalBackup()" class="text-[11px] text-slate-400 hover:text-white underline underline-offset-2">Zaxira olish</button>
+        <button type="button" onclick="document.getElementById('cloud-import-file').click()" class="text-[11px] text-slate-400 hover:text-white underline underline-offset-2">Bulutga ko‘chirish</button>
+        <input id="cloud-import-file" type="file" accept="application/json,.json" class="hidden" onchange="importCloudBackup(event)">
+      </div>
+      <button id="cloud-signout-button" type="button" onclick="signOutCloudUser()" class="hidden text-[11px] text-slate-400 hover:text-white underline underline-offset-2">Tizimdan chiqish</button>
+    </div>
+  </aside>
+
+  <section id="cloud-login-screen" class="hidden fixed inset-0 z-[100] bg-slate-950/70 backdrop-blur-sm items-center justify-center p-4">
+    <form onsubmit="handleCloudLogin(event)" class="w-full max-w-md bg-white rounded-2xl shadow-2xl p-7 space-y-5">
+      <div>
+        <p class="text-sm font-semibold text-indigo-600">Yotoqxona Davomat</p>
+        <h2 class="text-2xl font-bold text-slate-900 mt-1">Xodimlar uchun kirish</h2>
+        <p class="text-sm text-slate-500 mt-2">Ma’lumotlarni qurilmalar orasida sinxronlash uchun ishchi hisobingizga kiring.</p>
+      </div>
+      <label class="block text-sm font-medium text-slate-700">Email
+        <input id="cloud-login-email" type="email" autocomplete="username" required class="mt-1.5 w-full px-4 py-3 border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500">
+      </label>
+      <label class="block text-sm font-medium text-slate-700">Parol
+        <input id="cloud-login-password" type="password" autocomplete="current-password" required class="mt-1.5 w-full px-4 py-3 border border-slate-200 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500">
+      </label>
+      <p id="cloud-login-message" class="hidden text-sm text-rose-600" role="alert"></p>
+      <button id="cloud-login-submit" type="submit" class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-semibold">Kirish</button>
+      <p class="text-xs leading-5 text-slate-500">Hisobийг администратор Supabase дээр үүсгэж өгнө. Нийтийн бүртгэл нээлттэй биш.</p>
+    </form>
+  </section>
+
+  <!-- Main Content Container -->
+  <main class="flex-1 overflow-y-auto p-4 md:p-8 space-y-6">
+
+    <!-- Toast Notification Overlay -->
+    <div id="toast" class="fixed top-5 right-5 z-50 transform translate-x-full transition-transform duration-300 ease-in-out bg-slate-900 text-white px-5 py-3 rounded-xl shadow-2xl flex items-center gap-3 border border-slate-700 max-w-md">
+      <i id="toast-icon" class="fa-solid fa-circle-check text-emerald-400 text-lg"></i>
+      <span id="toast-msg" class="text-sm font-medium">Bajarildi</span>
+    </div>
+
+    <!-- 1. BOSH SAHIFA (DASHBOARD) -->
+    <section id="page-dashboard" class="page-content space-y-6">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h2 class="text-2xl font-bold text-slate-900">Bosh sahifa</h2>
+          <p class="text-slate-500 text-sm">Yotoqxona o'quvchilarining bugungi davomat ko'rsatkichlari</p>
+        </div>
+        <div class="flex items-center gap-2 bg-white px-4 py-2 rounded-xl shadow-sm border border-slate-200 text-slate-600 font-medium text-sm">
+          <i class="fa-regular fa-calendar text-indigo-600"></i>
+          <span id="dashboard-date-display">--</span>
+        </div>
+      </div>
+
+      <!-- Stat Cards Grid -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+        <!-- Active Students Card -->
+        <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200/80 flex flex-col justify-between hover:shadow-md transition">
+          <div class="flex items-center justify-between text-slate-500 mb-2">
+            <span class="text-xs font-semibold uppercase tracking-wider">Faol o‘quvchilar</span>
+            <div class="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
+              <i class="fa-solid fa-users"></i>
+            </div>
+          </div>
+          <div class="flex items-baseline gap-2">
+            <span class="text-2xl font-extrabold text-slate-900" id="dash-total-active">0</span>
+            <span class="text-xs font-medium text-slate-400">/ 10 max</span>
+          </div>
+        </div>
+
+        <!-- Present Today Card -->
+        <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200/80 flex flex-col justify-between hover:shadow-md transition">
+          <div class="flex items-center justify-between text-emerald-600 mb-2">
+            <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Kelganlar bugun</span>
+            <div class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
+              <i class="fa-solid fa-user-check"></i>
+            </div>
+          </div>
+          <div class="flex items-baseline gap-2">
+            <span class="text-2xl font-extrabold text-emerald-600" id="dash-present-today">0</span>
+            <span class="text-xs font-medium text-slate-400">o'quvchi</span>
+          </div>
+        </div>
+
+        <!-- Absent Today Card -->
+        <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200/80 flex flex-col justify-between hover:shadow-md transition">
+          <div class="flex items-center justify-between text-rose-600 mb-2">
+            <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Kelmaganlar bugun</span>
+            <div class="w-8 h-8 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center">
+              <i class="fa-solid fa-user-xmark"></i>
+            </div>
+          </div>
+          <div class="flex items-baseline gap-2">
+            <span class="text-2xl font-extrabold text-rose-600" id="dash-absent-today">0</span>
+            <span class="text-xs font-medium text-slate-400">o'quvchi</span>
+          </div>
+        </div>
+
+        <!-- Excused Today Card -->
+        <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200/80 flex flex-col justify-between hover:shadow-md transition">
+          <div class="flex items-center justify-between text-amber-600 mb-2">
+            <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Sabablilar bugun</span>
+            <div class="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center">
+              <i class="fa-solid fa-clock-rotate-left"></i>
+            </div>
+          </div>
+          <div class="flex items-baseline gap-2">
+            <span class="text-2xl font-extrabold text-amber-600" id="dash-excused-today">0</span>
+            <span class="text-xs font-medium text-slate-400">o'quvchi</span>
+          </div>
+        </div>
+
+        <!-- Percentage Card -->
+        <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200/80 flex flex-col justify-between hover:shadow-md transition">
+          <div class="flex items-center justify-between text-indigo-600 mb-2">
+            <span class="text-xs font-semibold uppercase tracking-wider text-slate-500">Bugungi davomat %</span>
+            <div class="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
+              <i class="fa-solid fa-percent"></i>
+            </div>
+          </div>
+          <div class="flex items-baseline gap-2">
+            <span class="text-2xl font-extrabold text-indigo-600" id="dash-percentage-today">0%</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Dashboard Grid: Quick Attendance Table & Visual Chart -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Quick Today Table -->
+        <div class="lg:col-span-2 bg-white rounded-2xl p-6 shadow-sm border border-slate-200/80">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="font-bold text-slate-800 text-lg">Bugungi davomat xulosasi</h3>
+            <button onclick="switchTab('daily')" class="text-xs text-indigo-600 font-semibold hover:text-indigo-800 transition">
+              Barchasini tahrirlash <i class="fa-solid fa-arrow-right ml-1"></i>
+            </button>
+          </div>
+
+          <div id="dash-weekend-notice" class="hidden mb-4 p-4 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-sm flex items-center gap-3">
+            <i class="fa-solid fa-triangle-exclamation text-amber-600 text-lg"></i>
+            <span>Bugun dam olish kuni (Shanba/Yakshanba). Bugun uchun davomat yuritilmaydi.</span>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm">
+              <thead class="bg-slate-50 text-slate-500 font-semibold border-b border-slate-200">
+                <tr>
+                  <th class="py-3 px-3 w-12 text-center">T/R</th>
+                  <th class="py-3 px-3">Hona raqami</th>
+                  <th class="py-3 px-3">O‘quvchi Ism Familiyasi</th>
+                  <th class="py-3 px-3">Sinfi</th>
+                  <th class="py-3 px-3 text-center">Holati</th>
+                </tr>
+              </thead>
+              <tbody id="dash-attendance-table" class="divide-y divide-slate-100">
+                <!-- Populated dynamically -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Dashboard Chart Summary -->
+        <div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-200/80 flex flex-col justify-between">
+          <div>
+            <h3 class="font-bold text-slate-800 text-lg mb-1">Davomat statistikasi</h3>
+            <p class="text-xs text-slate-500 mb-4">Joriy haftalik davomat taqsimoti</p>
+            <div class="h-56 relative flex items-center justify-center">
+              <canvas id="dashboardChart"></canvas>
+            </div>
+          </div>
+          <div class="mt-4 pt-4 border-t border-slate-100 flex justify-around text-center text-xs">
+            <div>
+              <span class="inline-block w-2.5 h-2.5 rounded-full bg-emerald-500 mr-1"></span>
+              <span class="text-slate-600">Keldi</span>
+            </div>
+            <div>
+              <span class="inline-block w-2.5 h-2.5 rounded-full bg-rose-500 mr-1"></span>
+              <span class="text-slate-600">Kelmadi</span>
+            </div>
+            <div>
+              <span class="inline-block w-2.5 h-2.5 rounded-full bg-amber-500 mr-1"></span>
+              <span class="text-slate-600">Sababli</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2. KUNLIK DAVOMAT (DAILY ATTENDANCE) -->
+    <section id="page-daily" class="page-content hidden space-y-6">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h2 class="text-2xl font-bold text-slate-900">Kunlik davomat</h2>
+          <p class="text-slate-500 text-sm">O'quvchilarning kunlik keldi-ketdi hisobini kiriting</p>
+        </div>
+
+        <!-- Date Navigator Controls -->
+        <div class="flex items-center gap-2 bg-white p-1.5 rounded-2xl shadow-sm border border-slate-200">
+          <button onclick="changeDailyDate(-1)" class="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition">
+            <i class="fa-solid fa-chevron-left text-xs"></i>
+          </button>
+          <input type="date" id="daily-date-picker" onchange="loadDailyAttendance()" class="px-2 py-1 border-0 focus:ring-0 font-medium text-slate-700 text-sm cursor-pointer outline-none">
+          <button onclick="changeDailyDate(1)" class="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition">
+            <i class="fa-solid fa-chevron-right text-xs"></i>
+          </button>
+          <button onclick="setDailyDateToToday()" class="px-3 py-1 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 font-semibold text-xs rounded-xl transition">
+            Bugun
+          </button>
+        </div>
+      </div>
+
+      <!-- Weekend Alert Banner -->
+      <div id="daily-weekend-banner" class="hidden p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-sm flex items-center gap-3 shadow-sm">
+        <i class="fa-solid fa-ban text-rose-600 text-xl"></i>
+        <div>
+          <span class="font-bold">Dam olish kuni!</span> (Shanba / Yakshanba)
+          <p class="text-xs text-rose-600 mt-0.5">Dam olish kunlari o'quvchilar yotoqxonada bo'lmaydi. Davomat tugmalari av hisoblangan holatda faol emas.</p>
+        </div>
+      </div>
+
+      <!-- Search & Filters -->
+      <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200/80 flex flex-col sm:flex-row gap-4 items-center justify-between">
+        <div class="relative w-full sm:w-72">
+          <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-3 text-slate-400 text-sm"></i>
+          <input type="text" id="daily-search" oninput="filterDailyList()" placeholder="Ism va familiya bo'yicha qidiruv..." class="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+        </div>
+        <div class="flex items-center gap-3 w-full sm:w-auto justify-end">
+          <select id="daily-class-filter" onchange="filterDailyList()" class="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            <option value="">Barcha sinflar</option>
+            <option value="9-A">9-A</option>
+            <option value="9-B">9-B</option>
+            <option value="10-A">10-A</option>
+            <option value="11-A">11-A</option>
+          </select>
+          <button id="daily-save-btn" onclick="saveDailyAttendance()" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-semibold shadow-md shadow-indigo-600/30 flex items-center gap-2 transition">
+            <i class="fa-solid fa-floppy-disk"></i>
+            <span>Saqlash</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Attendance Entry Table -->
+      <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-sm">
+            <thead class="bg-slate-50 text-slate-600 font-semibold border-b border-slate-200">
+              <tr>
+                <!-- T/R ALWAYS BEFORE ROOM NUMBER -->
+                <th class="py-3.5 px-4 w-12 text-center">T/R</th>
+                <th class="py-3.5 px-4">Hona raqami</th>
+                <th class="py-3.5 px-4">O‘quvchi Ism Familiyasi</th>
+                <th class="py-3.5 px-4">Sinfi</th>
+                <th class="py-3.5 px-4 text-center">Davomat statusi</th>
+                <th class="py-3.5 px-4">Izoh (ixtiyoriy)</th>
+              </tr>
+            </thead>
+            <tbody id="daily-attendance-tbody" class="divide-y divide-slate-100">
+              <!-- Rendered dynamically -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. OYLIK DAVOMAT (MONTHLY ATTENDANCE GRID VIEW) -->
+    <section id="page-monthly" class="page-content hidden space-y-6">
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h2 class="text-2xl font-bold text-slate-900">Oylik davomat</h2>
+          <p class="text-slate-500 text-sm">Oy davomidagi to'liq davomat jadvali</p>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2">
+          <!-- Month/Year Navigation -->
+          <div class="flex items-center gap-2 bg-white p-1.5 rounded-2xl shadow-sm border border-slate-200">
+            <button onclick="changeMonthlyDate(-1)" class="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition">
+              <i class="fa-solid fa-chevron-left text-xs"></i>
+            </button>
+            <select id="monthly-select-month" onchange="renderMonthlyGrid()" class="px-2 py-1 font-semibold text-slate-700 text-sm border-0 focus:ring-0 outline-none cursor-pointer">
+              <option value="0">Yanvar</option>
+              <option value="1">Fevral</option>
+              <option value="2">Mart</option>
+              <option value="3">Aprel</option>
+              <option value="4">May</option>
+              <option value="5">Iyun</option>
+              <option value="6">Iyul</option>
+              <option value="7">Avgust</option>
+              <option value="8">Sentyabr</option>
+              <option value="9">Oktyabr</option>
+              <option value="10">Noyabr</option>
+              <option value="11">Dekabr</option>
+            </select>
+            <select id="monthly-select-year" onchange="renderMonthlyGrid()" class="px-2 py-1 font-semibold text-slate-700 text-sm border-0 focus:ring-0 outline-none cursor-pointer">
+              <option value="2025">2025</option>
+              <option value="2026">2026</option>
+              <option value="2027">2027</option>
+            </select>
+            <button onclick="changeMonthlyDate(1)" class="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition">
+              <i class="fa-solid fa-chevron-right text-xs"></i>
+            </button>
+            <button onclick="setMonthlyToCurrent()" class="px-3 py-1 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 font-semibold text-xs rounded-xl transition">
+              Joriy oy
+            </button>
+          </div>
+
+          <!-- Excel Export Button for Monthly -->
+          <button onclick="exportMonthlyToExcel()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl text-sm font-semibold shadow-md shadow-emerald-600/30 flex items-center gap-2 transition">
+            <i class="fa-solid fa-file-excel"></i>
+            <span>Excelga yuklash</span>
+          </button>
+        </div>
+      </div>
+
+      <div id="monthly-status-summary" class="monthly-summary"></div>
+
+      <!-- Legend Indicator -->
+      <div class="flex items-center gap-6 bg-white p-3.5 rounded-2xl border border-slate-200 text-xs font-medium text-slate-600 flex-wrap">
+        <span class="font-bold text-slate-800">Belgilar:</span>
+        <span class="flex items-center gap-1.5"><span class="w-5 h-5 rounded flex items-center justify-center bg-emerald-100 text-emerald-700 font-bold">✓</span> Keldi</span>
+        <span class="flex items-center gap-1.5"><span class="w-5 h-5 rounded flex items-center justify-center bg-rose-100 text-rose-700 font-bold">✗</span> Kelmadi</span>
+        <span class="flex items-center gap-1.5"><span class="w-5 h-5 rounded flex items-center justify-center bg-amber-100 text-amber-700 font-bold">S</span> Sababli</span>
+        <span class="flex items-center gap-1.5"><span class="w-5 h-5 rounded flex items-center justify-center bg-slate-200 text-slate-400"></span> Dam olish (Shanba/Yakshanba)</span>
+      </div>
+
+      <!-- Grid Table Container -->
+      <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 overflow-hidden">
+        <div class="overflow-x-auto max-h-[600px]">
+          <table class="w-full text-center text-xs border-collapse">
+            <thead class="bg-slate-50 text-slate-600 font-semibold sticky top-0 z-10 border-b border-slate-200 shadow-sm">
+              <tr id="monthly-grid-header-days">
+                <!-- Days 1..31 dynamically injected -->
+              </tr>
+            </thead>
+            <tbody id="monthly-grid-tbody" class="divide-y divide-slate-100">
+              <!-- Rendered dynamically -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4. O‘QUVCHILAR (STUDENTS MANAGEMENT - ACTIVE & HISTORICAL) -->
+    <section id="page-students" class="page-content hidden space-y-6">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h2 class="text-2xl font-bold text-slate-900">O‘quvchilar ro‘yxati</h2>
+          <p class="text-slate-500 text-sm">Yotoqxonada istiqomat qiluvchi o'quvchilarni boshqarish</p>
+        </div>
+
+        <button onclick="openAddStudentModal()" class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl text-sm font-semibold shadow-md shadow-indigo-600/30 flex items-center gap-2 transition">
+          <i class="fa-solid fa-user-plus"></i>
+          <span>Yangi o‘quvchi qo‘shish</span>
+        </button>
+      </div>
+
+      <!-- Segmented Tabs: Active vs Historical Students -->
+      <div class="flex items-center gap-2 border-b border-slate-200">
+        <button onclick="switchStudentSubTab('active')" id="student-tab-active" class="py-3 px-5 font-semibold text-sm border-b-2 border-indigo-600 text-indigo-600 transition">
+          <i class="fa-solid fa-user-check mr-2"></i>Faol o‘quvchilar (<span id="count-active-tab">0</span>)
+        </button>
+        <button onclick="switchStudentSubTab('historical')" id="student-tab-historical" class="py-3 px-5 font-semibold text-sm border-b-2 border-transparent text-slate-500 hover:text-slate-700 transition">
+          <i class="fa-solid fa-box-archive mr-2"></i>Tarixiy o‘quvchilar (<span id="count-historical-tab">0</span>)
+        </button>
+      </div>
+
+      <!-- ACTIVE STUDENTS TAB -->
+      <div id="subtab-active-students" class="space-y-4">
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm">
+              <thead class="bg-slate-50 text-slate-600 font-semibold border-b border-slate-200">
+                <tr>
+                  <!-- STRICT ORDER: T/R ALWAYS BEFORE ROOM NUMBER -->
+                  <th class="py-3.5 px-4 w-12 text-center">T/R</th>
+                  <th class="py-3.5 px-4">Hona raqami</th>
+                  <th class="py-3.5 px-4">Ism</th>
+                  <th class="py-3.5 px-4">Familiya</th>
+                  <th class="py-3.5 px-4">Sinfi</th>
+                  <th class="py-3.5 px-4">Ota-onasining telefoni</th>
+                  <th class="py-3.5 px-4 text-right">Amallar</th>
+                </tr>
+              </thead>
+              <tbody id="active-students-tbody" class="divide-y divide-slate-100">
+                <!-- Rendered dynamically -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- HISTORICAL STUDENTS TAB -->
+      <div id="subtab-historical-students" class="hidden space-y-4">
+        <div class="bg-amber-50 border border-amber-200 text-amber-800 p-4 rounded-2xl text-xs flex items-center gap-3">
+          <i class="fa-solid fa-circle-info text-amber-600 text-lg"></i>
+          <span>Tarixiy o'quvchilar yangi davomat ro'yxatlarida ko'rinmaydi. Biroid, ularning o'tgan oylardagi barcha davomat ma'lumotlari hisobotlarda saqlanib qoladi.</span>
+        </div>
+
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm">
+              <thead class="bg-slate-50 text-slate-600 font-semibold border-b border-slate-200">
+                <tr>
+                  <th class="py-3.5 px-4 w-12 text-center">T/R</th>
+                  <th class="py-3.5 px-4">Hona raqami</th>
+                  <th class="py-3.5 px-4">Ism</th>
+                  <th class="py-3.5 px-4">Familiya</th>
+                  <th class="py-3.5 px-4">Sinfi</th>
+                  <th class="py-3.5 px-4">Ota-onasining telefoni</th>
+                  <th class="py-3.5 px-4 text-center">Maqom</th>
+                  <th class="py-3.5 px-4 text-right">Amallar</th>
+                </tr>
+              </thead>
+              <tbody id="historical-students-tbody" class="divide-y divide-slate-100">
+                <!-- Rendered dynamically -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 5. THIS MONTH'S BIRTHDAYS -->
+    <section id="page-birthdays" class="page-content hidden space-y-6">
+      <div>
+        <h2 id="birthdays-page-title" class="text-2xl font-bold text-slate-900">Shu oy tug‘ilgan kunlar</h2>
+        <p id="birthdays-page-subtitle" class="text-slate-500 text-sm">Joriy oyda tug‘ilgan kuni bo‘ladigan faol o‘quvchilar</p>
+      </div>
+
+      <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-sm">
+            <thead class="bg-slate-50 text-slate-600 font-semibold border-b border-slate-200">
+              <tr>
+                <th class="py-3.5 px-4 w-12 text-center">T/R</th>
+                <th class="py-3.5 px-4">Hona raqami</th>
+                <th class="py-3.5 px-4">Ism</th>
+                <th class="py-3.5 px-4">Familiya</th>
+                <th class="py-3.5 px-4">Sinfi</th>
+                <th class="py-3.5 px-4">Tug‘ilgan sana</th>
+                <th class="py-3.5 px-4">Qolgan vaqt</th>
+                <th class="py-3.5 px-4 text-right">Profil</th>
+              </tr>
+            </thead>
+            <tbody id="birthdays-students-tbody" class="divide-y divide-slate-100"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- 5. HISOBOTLAR (REPORTS & EXCEL EXPORT) -->
+    <section id="page-reports" class="page-content hidden space-y-6">
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h2 class="text-2xl font-bold text-slate-900">Hisobotlar</h2>
+          <p class="text-slate-500 text-sm">Oylik va umumiy davomat tahlili hammada (Telefon raqamlar hisobotda ko'rsatilmadi)</p>
+        </div>
+
+        <div class="flex items-center gap-3">
+          <div class="flex items-center gap-2 bg-white p-1.5 rounded-2xl shadow-sm border border-slate-200">
+            <select id="report-select-month" onchange="generateReport()" class="px-2 py-1 font-semibold text-slate-700 text-sm border-0 focus:ring-0 outline-none cursor-pointer">
+              <option value="0">Yanvar</option>
+              <option value="1">Fevral</option>
+              <option value="2">Mart</option>
+              <option value="3">Aprel</option>
+              <option value="4">May</option>
+              <option value="5">Iyun</option>
+              <option value="6">Iyul</option>
+              <option value="7">Avgust</option>
+              <option value="8">Sentyabr</option>
+              <option value="9">Oktyabr</option>
+              <option value="10">Noyabr</option>
+              <option value="11">Dekabr</option>
+            </select>
+            <select id="report-select-year" onchange="generateReport()" class="px-2 py-1 font-semibold text-slate-700 text-sm border-0 focus:ring-0 outline-none cursor-pointer">
+              <option value="2025">2025</option>
+              <option value="2026">2026</option>
+              <option value="2027">2027</option>
+            </select>
+          </div>
+
+          <button onclick="exportReportToExcel()" class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl text-sm font-semibold shadow-md shadow-emerald-600/30 flex items-center gap-2 transition">
+            <i class="fa-solid fa-file-excel text-lg"></i>
+            <span>Hisobotni Excelga yuklash</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Report Summary Stats -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+          <span class="text-xs text-slate-500 font-semibold uppercase">Jami o'quvchilar</span>
+          <p class="text-2xl font-bold text-slate-800 mt-1" id="rep-total-students">0</p>
+        </div>
+        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+          <span class="text-xs text-emerald-600 font-semibold uppercase">Jami Keldi</span>
+          <p class="text-2xl font-bold text-emerald-600 mt-1" id="rep-total-present">0</p>
+        </div>
+        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+          <span class="text-xs text-rose-600 font-semibold uppercase">Jami Kelmadi</span>
+          <p class="text-2xl font-bold text-rose-600 mt-1" id="rep-total-absent">0</p>
+        </div>
+        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+          <span class="text-xs text-amber-600 font-semibold uppercase">Jami Sababli</span>
+          <p class="text-2xl font-bold text-amber-600 mt-1" id="rep-total-excused">0</p>
+        </div>
+        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+          <span class="text-xs text-indigo-600 font-semibold uppercase">Umumiy davomat %</span>
+          <p class="text-2xl font-bold text-indigo-600 mt-1" id="rep-overall-percent">0%</p>
+        </div>
+      </div>
+
+      <!-- Individual Student Attendance Report Table (NO PHONE NUMBERS) -->
+      <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 overflow-hidden">
+        <div class="p-5 border-b border-slate-100 flex items-center justify-between">
+          <h3 class="font-bold text-slate-800 text-lg">O‘quvchilar bo‘yicha oylik davomat ko‘rsatkichlari</h3>
+          <span class="text-xs bg-slate-100 text-slate-600 px-3 py-1 rounded-full font-medium">Eslatma: Ota-ona telefoni hisobot jadvalida aks etmaydi</span>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-sm">
+            <thead class="bg-slate-50 text-slate-600 font-semibold border-b border-slate-200">
+              <tr>
+                <!-- T/R ALWAYS FIRST -->
+                <th class="py-3.5 px-4 w-12 text-center">T/R</th>
+                <th class="py-3.5 px-4">Hona raqami</th>
+                <th class="py-3.5 px-4">O‘quvchi Ism Familiyasi</th>
+                <th class="py-3.5 px-4">Sinfi</th>
+                <th class="py-3.5 px-4 text-center text-emerald-600">Kelgan kunlar</th>
+                <th class="py-3.5 px-4 text-center text-rose-600">Kelmagan kunlar</th>
+                <th class="py-3.5 px-4 text-center text-amber-600">Sababli kunlar</th>
+                <th class="py-3.5 px-4 text-center font-bold">Davomat foizi</th>
+              </tr>
+            </thead>
+            <tbody id="report-students-tbody" class="divide-y divide-slate-100">
+              <!-- Rendered dynamically -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- MODAL: ADD / EDIT STUDENT -->
+  <div id="student-modal" class="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div class="bg-white rounded-3xl shadow-2xl max-w-md w-full p-6 space-y-5 animate-in fade-in zoom-in duration-200">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-4">
+        <h3 id="modal-title" class="text-xl font-bold text-slate-900">Yangi o‘quvchi qo‘shish</h3>
+        <button onclick="closeStudentModal()" class="w-8 h-8 rounded-full bg-slate-100 text-slate-400 hover:text-slate-600 flex items-center justify-center">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <form id="student-form" onsubmit="handleSaveStudent(event)" class="space-y-4">
+        <input type="hidden" id="form-student-internal-id">
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Hona raqami <span class="text-rose-500">*</span></label>
+            <input type="text" id="form-student-id" required placeholder="Masalan: 1-hona" class="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Tug‘ilgan sana <span class="text-rose-500">*</span></label>
+            <input type="date" id="form-birth-date" required class="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Yotoqxonaga qo‘shilgan sana <span class="text-rose-500">*</span></label>
+          <input type="date" id="form-joined-date" required class="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Ism <span class="text-rose-500">*</span></label>
+            <input type="text" id="form-first-name" required placeholder="Ali" class="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Familiya <span class="text-rose-500">*</span></label>
+            <input type="text" id="form-last-name" required placeholder="Valiyev" class="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Sinfi <span class="text-rose-500">*</span></label>
+          <select id="form-class" required class="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+            <option value="9-A">9-A</option>
+            <option value="9-B">9-B</option>
+            <option value="10-A">10-A</option>
+            <option value="11-A">11-A</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Ota-onasining telefoni <span class="text-rose-500">*</span></label>
+          <input type="text" id="form-parent-phone" required placeholder="+998 90 123 4567" onblur="this.value = formatUzbekPhone(this.value)" class="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">O‘quvchining telefoni</label>
+          <input type="text" id="form-student-phone" placeholder="+998 90 123 4567" onblur="this.value = formatUzbekPhone(this.value)" class="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+        </div>
+
+        <div class="pt-3 flex gap-3">
+          <button type="button" onclick="closeStudentModal()" class="w-1/2 py-2.5 border border-slate-200 text-slate-600 rounded-xl font-semibold text-sm hover:bg-slate-50 transition">
+            Bekor qilish
+          </button>
+          <button type="submit" class="w-1/2 py-2.5 bg-indigo-600 text-white rounded-xl font-semibold text-sm hover:bg-indigo-700 shadow-md shadow-indigo-600/30 transition">
+            Saqlash
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: ALERT MESSAGE -->
+  <div id="alert-modal" class="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div class="bg-white rounded-3xl shadow-2xl max-w-sm w-full p-6 text-center space-y-4">
+      <div class="w-14 h-14 bg-amber-100 text-amber-600 rounded-2xl flex items-center justify-center mx-auto text-2xl">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+      </div>
+      <h3 id="alert-modal-title" class="text-lg font-bold text-slate-900">Xabar</h3>
+      <p id="alert-modal-msg" class="text-sm text-slate-600"></p>
+      <button onclick="closeAlertModal()" class="w-full py-2.5 bg-slate-900 text-white rounded-xl font-semibold text-sm hover:bg-slate-800 transition">
+        Tushundim
+      </button>
+    </div>
+  </div>
+
+  <script>
+    /* ==========================================================================
+       1. DATA STRUCTURE & PERSISTENCE (IndexedDB with LocalStorage fallback)
+       ========================================================================== */
+    let dbInstance = null;
+    let chartInstance = null;
+    let cloudClient = null;
+    let cloudChannel = null;
+    let cloudReady = false;
+    let cloudSyncTimer = null;
+    let currentPageId = "dashboard";
+    let applyingCloudSnapshot = false;
+
+    // Seed Data: 10 Active Uzbek Students
+    const INITIAL_STUDENTS = [
+      { id: "S1001", student_id: "1-hona", first_name: "Jasur", last_name: "Qodirov", class: "9-A", parent_phone: "+998 90 123 45 67", birth_date: "2010-02-10", joined_at: "2024-01-15", active: true },
+      { id: "S1002", student_id: "2-hona", first_name: "Sarvar", last_name: "Rahimov", class: "9-A", parent_phone: "+998 91 234 56 78", birth_date: "2010-08-18", joined_at: "2024-01-18", active: true },
+      { id: "S1003", student_id: "3-hona", first_name: "Shahzod", last_name: "Nurbekov", class: "9-B", parent_phone: "+998 93 345 67 89", birth_date: "2011-04-22", joined_at: "2024-02-01", active: true },
+      { id: "S1004", student_id: "4-hona", first_name: "Dilshod", last_name: "Karimov", class: "9-B", parent_phone: "+998 94 456 78 90", birth_date: "2010-11-04", joined_at: "2024-01-26", active: true },
+      { id: "S1005", student_id: "5-hona", first_name: "Azizbek", last_name: "Toshpulotov", class: "10-A", parent_phone: "+998 97 567 89 01", birth_date: "2011-01-15", joined_at: "2024-02-10", active: true },
+      { id: "S1006", student_id: "6-hona", first_name: "Sardor", last_name: "Olimov", class: "10-A", parent_phone: "+998 99 678 90 12", birth_date: "2010-06-30", joined_at: "2024-02-15", active: true },
+      { id: "S1007", student_id: "7-hona", first_name: "Bobur", last_name: "Yoqubov", class: "10-A", parent_phone: "+998 90 789 01 23", birth_date: "2012-03-12", joined_at: "2023-12-05", active: true },
+      { id: "S1008", student_id: "8-hona", first_name: "Otabek", last_name: "Xolmatov", class: "11-A", parent_phone: "+998 93 890 12 34", birth_date: "2011-09-28", joined_at: "2023-11-02", active: true },
+      { id: "S1009", student_id: "9-hona", first_name: "Farrux", last_name: "Aliyev", class: "11-A", parent_phone: "+998 95 901 23 45", birth_date: "2011-07-09", joined_at: "2024-01-07", active: true },
+      { id: "S1010", student_id: "10-hona", first_name: "Davron", last_name: "Usmonov", class: "11-A", parent_phone: "+998 98 012 34 56", birth_date: "2012-12-24", joined_at: "2024-02-03", active: true }
+    ];
+
+    // Initialize Memory State
+    let state = {
+      students: [],
+      attendance: {} // Key: YYYY-MM-DD -> Object { student_id: { status: 'Keldi'|'Kelmadi'|'Sababli', note: '' } }
+    };
+
+    // IndexedDB Initialization
+    function initStorage() {
+      return new Promise((resolve) => {
+        if (!window.indexedDB) {
+          fallbackToLocalStorage();
+          resolve();
+          return;
+        }
+
+        const request = indexedDB.open("DormitoryAttendanceDB", 1);
+        request.onupgradeneeded = (e) => {
+          const db = e.target.result;
+          if (!db.objectStoreNames.contains("students")) {
+            db.createObjectStore("students", { keyPath: "id" });
+          }
+          if (!db.objectStoreNames.contains("attendance")) {
+            db.createObjectStore("attendance", { keyPath: "date" });
+          }
+        };
+
+        request.onsuccess = (e) => {
+          dbInstance = e.target.result;
+          loadAllDataFromDB().then(resolve);
+        };
+
+        request.onerror = () => {
+          fallbackToLocalStorage();
+          resolve();
+        };
+      });
+    }
+
+    // Load Data from IndexedDB
+    async function loadAllDataFromDB() {
+      try {
+        const students = await getAllFromStore("students");
+        const attendanceList = await getAllFromStore("attendance");
+        const storedStudents = localStorage.getItem("dorm_students");
+        const storedAttendance = localStorage.getItem("dorm_attendance");
+        const localStudents = storedStudents ? JSON.parse(storedStudents) : null;
+        const localAttendance = storedAttendance ? JSON.parse(storedAttendance) : null;
+
+        if (students && students.length > 0) {
+          state.students = students;
+        } else if (localStudents && localStudents.length > 0) {
+          state.students = localStudents;
+        } else {
+          state.students = [...INITIAL_STUDENTS];
+        }
+
+        state.attendance = {};
+        attendanceList.forEach(item => {
+          state.attendance[item.date] = item.records;
+        });
+
+        if (attendanceList.length === 0 && localAttendance && Object.keys(localAttendance).length > 0) {
+          state.attendance = localAttendance;
+        }
+
+        await saveStudentsToStorage();
+
+        if (attendanceList.length === 0 && Object.keys(state.attendance).length > 0) {
+          Object.entries(state.attendance).forEach(([date, records]) => saveAttendanceForDate(date, records));
+        } else if (Object.keys(state.attendance).length === 0) {
+          seedInitialAttendance();
+        }
+      } catch (e) {
+        fallbackToLocalStorage();
+      }
+    }
+
+    function getAllFromStore(storeName) {
+      return new Promise((resolve, reject) => {
+        const tx = dbInstance.transaction(storeName, "readonly");
+        const store = tx.objectStore(storeName);
+        const req = store.getAll();
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+      });
+    }
+
+    function saveStudentsToStorage() {
+      if (dbInstance) {
+        const tx = dbInstance.transaction("students", "readwrite");
+        const store = tx.objectStore("students");
+        store.clear();
+        state.students.forEach(s => store.put(s));
+      }
+      localStorage.setItem("dorm_students", JSON.stringify(state.students));
+      scheduleCloudSync();
+    }
+
+    function saveAttendanceForDate(dateStr, records) {
+      state.attendance[dateStr] = records;
+      if (dbInstance) {
+        const tx = dbInstance.transaction("attendance", "readwrite");
+        const store = tx.objectStore("attendance");
+        store.put({ date: dateStr, records });
+      }
+      localStorage.setItem("dorm_attendance", JSON.stringify(state.attendance));
+      scheduleCloudSync();
+    }
+
+    function updateCloudStatus(message, isConnected = false) {
+      const text = document.getElementById("cloud-status-text");
+      const dot = document.getElementById("cloud-status-dot");
+      if (text) text.innerText = message;
+      if (dot) dot.className = `w-2 h-2 rounded-full ${isConnected ? "bg-emerald-500 animate-pulse" : "bg-amber-400"}`;
+    }
+
+    function showCloudLogin(message = "") {
+      const screen = document.getElementById("cloud-login-screen");
+      const messageElement = document.getElementById("cloud-login-message");
+      if (messageElement) {
+        messageElement.innerText = message;
+        messageElement.classList.toggle("hidden", !message);
+      }
+      if (screen) {
+        screen.classList.remove("hidden");
+        screen.classList.add("flex");
+      }
+    }
+
+    function hideCloudLogin() {
+      const screen = document.getElementById("cloud-login-screen");
+      screen.classList.add("hidden");
+      screen.classList.remove("flex");
+    }
+
+    function buildCloudSnapshot() {
+      return {
+        students: state.students,
+        attendance: state.attendance
+      };
+    }
+
+    function exportLocalBackup() {
+      const backup = {
+        version: 1,
+        exported_at: new Date().toISOString(),
+        ...buildCloudSnapshot()
+      };
+      const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `yotoqxona-zaxira-${formatDateISO(new Date())}.json`;
+      link.click();
+      URL.revokeObjectURL(url);
+      showToast("Zaxira fayli yuklab olindi!");
+    }
+
+    async function importCloudBackup(event) {
+      const file = event.target.files?.[0];
+      event.target.value = "";
+      if (!file) return;
+      if (!cloudReady || !cloudClient) {
+        showAlertModal("Avval xodim hisobingiz bilan bulutga kiring.", "Bulutga kirish kerak");
+        return;
+      }
+      if (!window.confirm("Zaxira faylidagi o‘quvchilar va davomat bulutdagi barcha ma’lumotlarni almashtiradi. Davom etasizmi?")) return;
+
+      try {
+        const snapshot = JSON.parse(await file.text());
+        if (!Array.isArray(snapshot.students) || !snapshot.attendance || typeof snapshot.attendance !== "object") {
+          throw new Error("Zaxira faylining tuzilishi noto‘g‘ri.");
+        }
+        if (!window.confirm(`${snapshot.students.length} ta o‘quvchi va davomat yozuvlarini bulutga joylashni tasdiqlaysizmi?`)) return;
+
+        updateCloudStatus("Zaxira bulutga yuklanmoqda...");
+        const { error } = await cloudClient
+          .from("dormitory_state")
+          .upsert({ id: 1, payload: { students: snapshot.students, attendance: snapshot.attendance }, updated_at: new Date().toISOString() });
+        if (error) throw error;
+
+        await applyCloudSnapshot(snapshot);
+        updateCloudStatus("Bulut bilan sinxron", true);
+        showToast("Ma’lumotlar bulutga ko‘chirildi!");
+      } catch (error) {
+        showAlertModal(error.message || "Zaxira faylini import qilib bo‘lmadi.", "Import xatosi");
+      }
+    }
+
+    function persistSnapshotLocally(snapshot) {
+      state.students = Array.isArray(snapshot.students) ? snapshot.students : [];
+      state.attendance = snapshot.attendance && typeof snapshot.attendance === "object" ? snapshot.attendance : {};
+      localStorage.setItem("dorm_students", JSON.stringify(state.students));
+      localStorage.setItem("dorm_attendance", JSON.stringify(state.attendance));
+
+      if (dbInstance) {
+        const studentTx = dbInstance.transaction("students", "readwrite");
+        const studentStore = studentTx.objectStore("students");
+        studentStore.clear();
+        state.students.forEach(student => studentStore.put(student));
+
+        const attendanceTx = dbInstance.transaction("attendance", "readwrite");
+        const attendanceStore = attendanceTx.objectStore("attendance");
+        attendanceStore.clear();
+        Object.entries(state.attendance).forEach(([date, records]) => attendanceStore.put({ date, records }));
+      }
+    }
+
+    async function applyCloudSnapshot(snapshot) {
+      if (!snapshot || !Array.isArray(snapshot.students)) return;
+      applyingCloudSnapshot = true;
+      persistSnapshotLocally(snapshot);
+      applyingCloudSnapshot = false;
+
+      if (currentPageId === "dashboard") renderDashboard();
+      if (currentPageId === "daily") loadDailyAttendance();
+      if (currentPageId === "monthly") renderMonthlyGrid();
+      if (currentPageId === "students") renderStudentsList();
+      if (currentPageId === "birthdays") renderMonthlyBirthdays();
+      if (currentPageId === "reports") generateReport();
+    }
+
+    function scheduleCloudSync() {
+      if (!cloudReady || applyingCloudSnapshot || !cloudClient) return;
+      clearTimeout(cloudSyncTimer);
+      cloudSyncTimer = setTimeout(async () => {
+        updateCloudStatus("Bulutga saqlanmoqda...");
+        const { error } = await cloudClient
+          .from("dormitory_state")
+          .upsert({ id: 1, payload: buildCloudSnapshot(), updated_at: new Date().toISOString() });
+
+        if (error) {
+          updateCloudStatus("Bulutga saqlashda xato");
+          console.error("Cloud sync failed:", error.message);
+          return;
+        }
+        updateCloudStatus("Bulut bilan sinxron", true);
+      }, 400);
+    }
+
+    async function initializeCloudSync() {
+      const cloudUrl = window.DORM_SUPABASE_URL;
+      const cloudAnonKey = window.DORM_SUPABASE_ANON_KEY;
+      if (!cloudUrl || !cloudAnonKey || !window.supabase?.createClient) {
+        updateCloudStatus("Qurilmada saqlanmoqda");
+        return;
+      }
+
+      cloudClient = window.supabase.createClient(cloudUrl, cloudAnonKey);
+      const { data, error } = await cloudClient.auth.getSession();
+      if (error) {
+        updateCloudStatus("Bulutga ulanib bo‘lmadi");
+        showCloudLogin(error.message);
+        return;
+      }
+      if (data.session) {
+        await activateCloudSession();
+      } else {
+        updateCloudStatus("Bulutga kirish kutilmoqda");
+        showCloudLogin();
+      }
+    }
+
+    async function activateCloudSession() {
+      updateCloudStatus("Bulut ma’lumotlari yuklanmoqda...");
+      const { data, error } = await cloudClient
+        .from("dormitory_state")
+        .select("payload")
+        .eq("id", 1)
+        .maybeSingle();
+
+      if (error) {
+        updateCloudStatus("Bulut ma’lumotlarini yuklab bo‘lmadi");
+        showCloudLogin("Supabase jadvali yoki ruxsatlari sozlanmagan. Sozlash yo‘riqnomasini tekshiring.");
+        console.error("Cloud load failed:", error.message);
+        return;
+      }
+
+      if (data?.payload) {
+        await applyCloudSnapshot(data.payload);
+      } else {
+        const { error: saveError } = await cloudClient
+          .from("dormitory_state")
+          .upsert({ id: 1, payload: buildCloudSnapshot(), updated_at: new Date().toISOString() });
+        if (saveError) {
+          updateCloudStatus("Bulutga boshlang‘ich ma’lumotni saqlab bo‘lmadi");
+          showCloudLogin("Boshlang‘ich ma’lumotni saqlash amalga oshmadi. RLS sozlamalarini tekshiring.");
+          console.error("Cloud initialization failed:", saveError.message);
+          return;
+        }
+      }
+
+      cloudReady = true;
+      hideCloudLogin();
+      document.getElementById("cloud-signout-button").classList.remove("hidden");
+      updateCloudStatus("Bulut bilan sinxron", true);
+      subscribeToCloudUpdates();
+      switchTab(currentPageId);
+    }
+
+    function subscribeToCloudUpdates() {
+      if (!cloudClient) return;
+      if (cloudChannel) cloudClient.removeChannel(cloudChannel);
+      cloudChannel = cloudClient
+        .channel("dormitory-state-sync")
+        .on("postgres_changes", {
+          event: "UPDATE",
+          schema: "public",
+          table: "dormitory_state",
+          filter: "id=eq.1"
+        }, payload => {
+          if (payload.new?.payload) applyCloudSnapshot(payload.new.payload);
+        })
+        .subscribe(status => {
+          if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
+            updateCloudStatus("Bulut sinxroni uzildi");
+          }
+        });
+    }
+
+    async function handleCloudLogin(event) {
+      event.preventDefault();
+      const button = document.getElementById("cloud-login-submit");
+      button.disabled = true;
+      button.innerText = "Kirilmoqda...";
+      showCloudLogin("");
+
+      const { error } = await cloudClient.auth.signInWithPassword({
+        email: document.getElementById("cloud-login-email").value.trim(),
+        password: document.getElementById("cloud-login-password").value
+      });
+
+      if (error) {
+        showCloudLogin("Email yoki parol noto‘g‘ri, yoxud hisob tasdiqlanmagan.");
+      } else {
+        await activateCloudSession();
+      }
+      button.disabled = false;
+      button.innerText = "Kirish";
+    }
+
+    async function signOutCloudUser() {
+      if (!cloudClient) return;
+      await cloudClient.auth.signOut();
+      cloudReady = false;
+      if (cloudChannel) cloudClient.removeChannel(cloudChannel);
+      document.getElementById("cloud-signout-button").classList.add("hidden");
+      updateCloudStatus("Bulutga kirish kutilmoqda");
+      showCloudLogin();
+    }
+
+    function fallbackToLocalStorage() {
+      const storedStudents = localStorage.getItem("dorm_students");
+      const storedAttendance = localStorage.getItem("dorm_attendance");
+
+      if (storedStudents) {
+        state.students = JSON.parse(storedStudents);
+      } else {
+        state.students = [...INITIAL_STUDENTS];
+        localStorage.setItem("dorm_students", JSON.stringify(state.students));
+      }
+
+      if (storedAttendance) {
+        state.attendance = JSON.parse(storedAttendance);
+      } else {
+        seedInitialAttendance();
+      }
+    }
+
+    // Pre-populate rich historical attendance for demo (excluding weekends)
+    function seedInitialAttendance() {
+      state.attendance = {};
+      const today = new Date();
+      // Seed last 20 weekdays
+      let count = 0;
+      let curr = new Date(today);
+
+      while (count < 25) {
+        const dayOfWeek = curr.getDay();
+        const dateStr = formatDateISO(curr);
+
+        // Skip Saturday (6) and Sunday (0)
+        if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+          const dayRecords = {};
+          state.students.forEach((student, index) => {
+            // Realistic distribution: 85% Present, 10% Absent, 5% Excused
+            const rand = Math.random();
+            let status = "Keldi";
+            if (rand > 0.85 && rand <= 0.95) status = "Sababli";
+            else if (rand > 0.95) status = "Kelmadi";
+
+            dayRecords[student.student_id] = {
+              status: status,
+              note: status === "Sababli" ? "Shifokor ruxsati" : ""
+            };
+          });
+          state.attendance[dateStr] = dayRecords;
+          if (dbInstance) {
+            saveAttendanceForDate(dateStr, dayRecords);
+          }
+          count++;
+        }
+        curr.setDate(curr.getDate() - 1);
+      }
+      localStorage.setItem("dorm_attendance", JSON.stringify(state.attendance));
+    }
+
+    /* ==========================================================================
+       2. HELPER FUNCTIONS & DATE UTILS
+       ========================================================================== */
+    function formatDateISO(date) {
+      const y = date.getFullYear();
+      const m = String(date.getMonth() + 1).padStart(2, '0');
+      const d = String(date.getDate()).padStart(2, '0');
+      return `${y}-${m}-${d}`;
+    }
+
+    function parseISODate(isoStr) {
+      const parts = isoStr.split('-');
+      return new Date(parts[0], parts[1] - 1, parts[2]);
+    }
+
+    function normalizeRoomNumber(value) {
+      const clean = (value || "").trim();
+      if (!clean) return "1-hona";
+      if (/^\d+\s*-?\s*hona$/i.test(clean)) return clean.replace(/\s+/g, "").toLowerCase();
+      if (/^\d+$/.test(clean)) return `${clean}-hona`;
+      return clean.replace(/\s+/g, "").replace(/-+/g, "-").toLowerCase();
+    }
+
+    function formatUzbekPhone(value) {
+      let digits = String(value || "").replace(/\D/g, "");
+      if (digits === "998") return "+998";
+      if (digits.startsWith("998") && digits.length > 9) digits = digits.slice(3);
+      if (digits.startsWith("0") && digits.length === 10) digits = digits.slice(1);
+      if (!digits) return "";
+
+      const groups = [digits.slice(0, 2), digits.slice(2, 5), digits.slice(5, 9)].filter(Boolean);
+      return `+998 ${groups.join(" ")}`;
+    }
+
+    function sortStudentsByRoom(students) {
+      return [...students].sort((a, b) => {
+        const roomA = String(a.student_id || "");
+        const roomB = String(b.student_id || "");
+        const numberA = Number(roomA.match(/\d+/)?.[0] || Infinity);
+        const numberB = Number(roomB.match(/\d+/)?.[0] || Infinity);
+        return numberA - numberB || roomA.localeCompare(roomB, undefined, { numeric: true, sensitivity: "base" });
+      });
+    }
+
+    function getBirthdayInfo(birthDate) {
+      if (!birthDate) return { daysLeft: 0, label: 'Tug‘ilgan sana kiritilmagan' };
+      const today = new Date();
+      const birth = parseISODate(birthDate);
+      const nextBirthday = new Date(today.getFullYear(), birth.getMonth(), birth.getDate());
+      if (nextBirthday < today) {
+        nextBirthday.setFullYear(today.getFullYear() + 1);
+      }
+      const diffMs = nextBirthday - today;
+      const daysLeft = Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
+      return { daysLeft, label: `${daysLeft} kun qoldi` };
+    }
+
+    function isWeekend(date) {
+      const day = date.getDay();
+      return day === 0 || day === 6; // 0 = Sunday, 6 = Saturday
+    }
+
+    function getUzbekMonthName(monthIndex) {
+      const months = ["Yanvar", "Fevral", "Mart", "Aprel", "May", "Iyun", "Iyul", "Avgust", "Sentyabr", "Oktyabr", "Noyabr", "Dekabr"];
+      return months[parseInt(monthIndex)];
+    }
+
+    function formatBirthdayDate(date) {
+      const monthName = getUzbekMonthName(date.getMonth()).toLowerCase();
+      return `${date.getDate()}-${monthName}`;
+    }
+
+    function showToast(msg, iconClass = "fa-circle-check text-emerald-400") {
+      const toast = document.getElementById("toast");
+      const msgEl = document.getElementById("toast-msg");
+      const iconEl = document.getElementById("toast-icon");
+
+      msgEl.innerText = msg;
+      iconEl.className = `fa-solid ${iconClass} text-lg`;
+
+      toast.classList.remove("translate-x-full");
+      setTimeout(() => {
+        toast.classList.add("translate-x-full");
+      }, 3000);
+    }
+
+    function showAlertModal(msg, title = "Cheklov!") {
+      document.getElementById("alert-modal-title").innerText = title;
+      document.getElementById("alert-modal-msg").innerText = msg;
+      document.getElementById("alert-modal").classList.remove("hidden");
+      document.getElementById("alert-modal").classList.add("flex");
+    }
+
+    function closeAlertModal() {
+      document.getElementById("alert-modal").classList.add("hidden");
+      document.getElementById("alert-modal").classList.remove("flex");
+    }
+
+    /* ==========================================================================
+       3. NAVIGATION & TAB SWITCHING
+       ========================================================================== */
+    function switchTab(tabId) {
+      currentPageId = tabId;
+      // Hide all content pages
+      document.querySelectorAll(".page-content").forEach(page => page.classList.add("hidden"));
+      
+      // Reset button styles
+      document.querySelectorAll(".nav-btn").forEach(btn => {
+        btn.className = "nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-sm transition-all duration-200 text-slate-400 hover:bg-slate-800 hover:text-slate-200";
+      });
+
+      // Show selected page
+      const targetPage = document.getElementById(`page-${tabId}`);
+      if (targetPage) targetPage.classList.remove("hidden");
+
+      // Active state button
+      const activeNav = document.getElementById(`nav-${tabId}`);
+      if (activeNav) {
+        activeNav.className = "nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-sm transition-all duration-200 bg-indigo-600 text-white shadow-md shadow-indigo-600/30";
+      }
+
+      // Refresh corresponding page views
+      if (tabId === "dashboard") renderDashboard();
+      if (tabId === "daily") loadDailyAttendance();
+      if (tabId === "monthly") renderMonthlyGrid();
+      if (tabId === "students") renderStudentsList();
+      if (tabId === "birthdays") renderMonthlyBirthdays();
+      if (tabId === "reports") generateReport();
+    }
+
+    function renderMonthlyBirthdays() {
+      const today = new Date();
+      const monthIndex = today.getMonth();
+      const monthName = getUzbekMonthName(monthIndex);
+      const title = document.getElementById("birthdays-page-title");
+      const subtitle = document.getElementById("birthdays-page-subtitle");
+      const tbody = document.getElementById("birthdays-students-tbody");
+      const birthdayStudents = sortStudentsByRoom(state.students.filter(student => {
+        if (!student.active || !student.birth_date) return false;
+        return parseISODate(student.birth_date).getMonth() === monthIndex;
+      }));
+
+      title.innerText = `${monthName} oyida tug‘ilgan kunlar`;
+      subtitle.innerText = `${monthName} oyida tug‘ilgan kuni bo‘ladigan faol o‘quvchilar (${birthdayStudents.length})`;
+      tbody.innerHTML = "";
+
+      if (birthdayStudents.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="8" class="py-8 text-center text-slate-400">${monthName} oyida tug‘ilgan kuni bo‘ladigan o‘quvchilar yo‘q</td></tr>`;
+        return;
+      }
+
+      birthdayStudents.forEach((student, index) => {
+        const birthDate = parseISODate(student.birth_date);
+        const birthdayInfo = getBirthdayInfo(student.birth_date);
+        const birthdayLabel = formatBirthdayDate(birthDate);
+        const hasPassed = birthDate.getDate() < today.getDate();
+        const isToday = birthDate.getDate() === today.getDate();
+        const rowStyle = hasPassed ? "bg-slate-50 text-slate-500" : isToday ? "bg-amber-50" : "bg-emerald-50/70";
+        const badgeStyle = hasPassed ? "bg-slate-200 text-slate-600" : isToday ? "bg-amber-200 text-amber-800" : "bg-emerald-100 text-emerald-700";
+        const countdown = hasPassed ? "O‘tib ketdi" : isToday ? "Bugun" : birthdayInfo.label;
+        const row = `
+          <tr class="${rowStyle} hover:brightness-[0.98] transition border-b border-slate-100">
+            <td class="py-3.5 px-4 text-center font-medium text-slate-400">${index + 1}</td>
+            <td class="py-3.5 px-4 font-semibold text-slate-700">${student.student_id}</td>
+            <td class="py-3.5 px-4 font-medium text-slate-900">${student.first_name}</td>
+            <td class="py-3.5 px-4 font-medium text-slate-900">${student.last_name}</td>
+            <td class="py-3.5 px-4 text-slate-600">${student.class}</td>
+            <td class="py-3.5 px-4 text-slate-600">${birthdayLabel}</td>
+            <td class="py-3.5 px-4"><span class="inline-flex px-2.5 py-1 rounded-full text-xs font-semibold ${badgeStyle}">${countdown}</span></td>
+            <td class="py-3.5 px-4 text-right">
+              <button type="button" class="profile-mini-btn" title="Profilni ko‘rish" aria-label="${student.first_name} ${student.last_name} profilini ko‘rish" onclick="openStudentProfile('${student.id}')">
+                <i class="fa-solid fa-user"></i>
+              </button>
+            </td>
+          </tr>
+        `;
+        tbody.insertAdjacentHTML("beforeend", row);
+      });
+    }
+
+    /* ==========================================================================
+       4. BOSH SAHIFA (DASHBOARD) LOGIC
+       ========================================================================== */
+    function renderDashboard() {
+      const today = new Date();
+      const todayStr = formatDateISO(today);
+
+      // Date Display
+      const dateFormatted = `${today.getDate()} ${getUzbekMonthName(today.getMonth())}, ${today.getFullYear()}`;
+      document.getElementById("dashboard-date-display").innerText = dateFormatted;
+
+      // Active students count
+      const activeStudents = sortStudentsByRoom(state.students.filter(s => s.active));
+      document.getElementById("dash-total-active").innerText = activeStudents.length;
+
+      // Check if today is weekend
+      const weekend = isWeekend(today);
+      const weekendNotice = document.getElementById("dash-weekend-notice");
+      const tbody = document.getElementById("dash-attendance-table");
+      tbody.innerHTML = "";
+
+      if (weekend) {
+        weekendNotice.classList.remove("hidden");
+        document.getElementById("dash-present-today").innerText = "0";
+        document.getElementById("dash-absent-today").innerText = "0";
+        document.getElementById("dash-excused-today").innerText = "0";
+        document.getElementById("dash-percentage-today").innerText = "0%";
+
+        tbody.innerHTML = `<tr><td colspan="5" class="py-6 text-center text-slate-400 italic">Bugun dam olish kuni. Davomat yuritilmaydi.</td></tr>`;
+        updateDashboardChart(0, 0, 0);
+        return;
+      }
+
+      weekendNotice.classList.add("hidden");
+      const todayRecords = state.attendance[todayStr] || {};
+
+      let presentCount = 0;
+      let absentCount = 0;
+      let excusedCount = 0;
+
+      activeStudents.forEach((student, index) => {
+        const record = todayRecords[student.student_id] || { status: "Keldi" };
+        if (record.status === "Keldi") presentCount++;
+        else if (record.status === "Kelmadi") absentCount++;
+        else if (record.status === "Sababli") excusedCount++;
+
+        // Status badge UI
+        let badgeHtml = "";
+        if (record.status === "Keldi") {
+          badgeHtml = `<span class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-emerald-100 text-emerald-700">✓ Keldi</span>`;
+        } else if (record.status === "Kelmadi") {
+          badgeHtml = `<span class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-rose-100 text-rose-700">✗ Kelmadi</span>`;
+        } else {
+          badgeHtml = `<span class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-amber-100 text-amber-700">S Sababli</span>`;
+        }
+
+        // T/R STRICTLY BEFORE STUDENT ID
+        const row = `
+          <tr class="hover:bg-slate-50 transition">
+            <td class="py-3 px-3 text-center font-medium text-slate-400">${index + 1}</td>
+            <td class="py-3 px-3 font-semibold text-slate-700">${student.student_id}</td>
+            <td class="py-3 px-3 font-medium text-slate-900">${student.first_name} ${student.last_name}</td>
+            <td class="py-3 px-3 text-slate-600">${student.class}</td>
+            <td class="py-3 px-3 text-center">${badgeHtml}</td>
+          </tr>
+        `;
+        tbody.insertAdjacentHTML("beforeend", row);
+      });
+
+      document.getElementById("dash-present-today").innerText = presentCount;
+      document.getElementById("dash-absent-today").innerText = absentCount;
+      document.getElementById("dash-excused-today").innerText = excusedCount;
+
+      const totalCount = activeStudents.length;
+      const percentage = totalCount > 0 ? Math.round((presentCount / totalCount) * 100) : 0;
+      document.getElementById("dash-percentage-today").innerText = `${percentage}%`;
+
+      updateDashboardChart(presentCount, absentCount, excusedCount);
+    }
+
+    function updateDashboardChart(present, absent, excused) {
+      const ctx = document.getElementById("dashboardChart").getContext("2d");
+      if (chartInstance) {
+        chartInstance.destroy();
+      }
+
+      chartInstance = new Chart(ctx, {
+        type: "doughnut",
+        data: {
+          labels: ["Keldi", "Kelmadi", "Sababli"],
+          datasets: [{
+            data: [present, absent, excused],
+            backgroundColor: ["#10b981", "#f43f5e", "#f59e0b"],
+            borderWidth: 0,
+            hoverOffset: 4
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false }
+          },
+          cutout: "75%"
+        }
+      });
+    }
+
+    /* ==========================================================================
+       5. KUNLIK DAVOMAT (DAILY ATTENDANCE) LOGIC
+       ========================================================================== */
+    function setDailyDateToToday() {
+      const todayStr = formatDateISO(new Date());
+      document.getElementById("daily-date-picker").value = todayStr;
+      loadDailyAttendance();
+    }
+
+    function changeDailyDate(days) {
+      const picker = document.getElementById("daily-date-picker");
+      let curr = picker.value ? parseISODate(picker.value) : new Date();
+      curr.setDate(curr.getDate() + days);
+      picker.value = formatDateISO(curr);
+      loadDailyAttendance();
+    }
+
+    function loadDailyAttendance() {
+      const picker = document.getElementById("daily-date-picker");
+      if (!picker.value) {
+        picker.value = formatDateISO(new Date());
+      }
+
+      const selectedDate = parseISODate(picker.value);
+      const selectedDateStr = picker.value;
+      const weekend = isWeekend(selectedDate);
+
+      const banner = document.getElementById("daily-weekend-banner");
+      const saveBtn = document.getElementById("daily-save-btn");
+
+      if (weekend) {
+        banner.classList.remove("hidden");
+        saveBtn.disabled = true;
+        saveBtn.classList.add("opacity-50", "cursor-not-allowed");
+      } else {
+        banner.classList.add("hidden");
+        saveBtn.disabled = false;
+        saveBtn.classList.remove("opacity-50", "cursor-not-allowed");
+      }
+
+      filterDailyList();
+    }
+
+    function filterDailyList() {
+      const dateStr = document.getElementById("daily-date-picker").value;
+      const selectedDate = parseISODate(dateStr);
+      const weekend = isWeekend(selectedDate);
+
+      const searchQuery = document.getElementById("daily-search").value.toLowerCase();
+      const classFilter = document.getElementById("daily-class-filter").value;
+
+      const activeStudents = sortStudentsByRoom(state.students.filter(s => s.active));
+      const dayRecords = state.attendance[dateStr] || {};
+
+      const tbody = document.getElementById("daily-attendance-tbody");
+      tbody.innerHTML = "";
+
+      let filtered = activeStudents.filter(s => {
+        const fullName = `${s.first_name} ${s.last_name}`.toLowerCase();
+        const matchesSearch = !searchQuery || fullName.includes(searchQuery);
+        const matchesClass = !classFilter || s.class === classFilter;
+        return matchesSearch && matchesClass;
+      });
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" class="py-8 text-center text-slate-400">O'quvchilar topilmadi</td></tr>`;
+        return;
+      }
+
+      filtered.forEach((student, index) => {
+        const record = dayRecords[student.student_id] || { status: "Keldi", note: "" };
+        const status = record.status;
+        const note = record.note || "";
+
+        const disabledAttr = weekend ? "disabled" : "";
+
+        // STRICT T/R COLUMN BEFORE STUDENT ID
+        const row = `
+          <tr class="hover:bg-slate-50 transition border-b border-slate-100">
+            <td class="py-3 px-4 text-center font-medium text-slate-400">${index + 1}</td>
+            <td class="py-3 px-4 font-semibold text-slate-700">${student.student_id}</td>
+            <td class="py-3 px-4 font-medium text-slate-900">${student.first_name} ${student.last_name}</td>
+            <td class="py-3 px-4 text-slate-600">${student.class}</td>
+            <td class="py-3 px-4 text-center">
+              <div class="inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-100 p-1.5 no-select">
+                <button type="button" onclick="setRowStatus('${student.student_id}', 'Keldi')" ${disabledAttr}
+                  id="btn-${student.student_id}-Keldi"
+                  class="status-btn px-3 py-1 text-xs font-bold rounded-xl transition ${status === 'Keldi' ? 'bg-emerald-500 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900'} ${weekend ? 'opacity-40 cursor-not-allowed' : ''}">
+                  ✓ Keldi
+                </button>
+                <button type="button" onclick="setRowStatus('${student.student_id}', 'Kelmadi')" ${disabledAttr}
+                  id="btn-${student.student_id}-Kelmadi"
+                  class="status-btn px-3 py-1 text-xs font-bold rounded-xl transition ${status === 'Kelmadi' ? 'bg-rose-500 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900'} ${weekend ? 'opacity-40 cursor-not-allowed' : ''}">
+                  ✗ Kelmadi
+                </button>
+                <button type="button" onclick="setRowStatus('${student.student_id}', 'Sababli')" ${disabledAttr}
+                  id="btn-${student.student_id}-Sababli"
+                  class="status-btn px-3 py-1 text-xs font-bold rounded-xl transition ${status === 'Sababli' ? 'bg-amber-500 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900'} ${weekend ? 'opacity-40 cursor-not-allowed' : ''}">
+                  S Sababli
+                </button>
+              </div>
+              <input type="hidden" id="status-val-${student.student_id}" value="${status}">
+            </td>
+            <td class="py-3 px-4">
+              <input type="text" id="note-val-${student.student_id}" value="${note}" ${disabledAttr} placeholder="Izoh..." class="w-full px-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:ring-1 focus:ring-indigo-500 outline-none ${weekend ? 'bg-slate-100 cursor-not-allowed' : ''}">
+            </td>
+          </tr>
+        `;
+        tbody.insertAdjacentHTML("beforeend", row);
+      });
+    }
+
+    function setRowStatus(studentId, newStatus) {
+      document.getElementById(`status-val-${studentId}`).value = newStatus;
+
+      const btnKeldi = document.getElementById(`btn-${studentId}-Keldi`);
+      const btnKelmadi = document.getElementById(`btn-${studentId}-Kelmadi`);
+      const btnSababli = document.getElementById(`btn-${studentId}-Sababli`);
+
+      // Reset styles
+      btnKeldi.className = "status-btn px-3 py-1 text-xs font-bold rounded-lg transition text-slate-600 hover:text-slate-900";
+      btnKelmadi.className = "status-btn px-3 py-1 text-xs font-bold rounded-lg transition text-slate-600 hover:text-slate-900";
+      btnSababli.className = "status-btn px-3 py-1 text-xs font-bold rounded-lg transition text-slate-600 hover:text-slate-900";
+
+      // Apply selected style
+      if (newStatus === 'Keldi') btnKeldi.className = "status-btn px-3 py-1 text-xs font-bold rounded-lg transition bg-emerald-500 text-white shadow-sm";
+      if (newStatus === 'Kelmadi') btnKelmadi.className = "status-btn px-3 py-1 text-xs font-bold rounded-lg transition bg-rose-500 text-white shadow-sm";
+      if (newStatus === 'Sababli') btnSababli.className = "status-btn px-3 py-1 text-xs font-bold rounded-lg transition bg-amber-500 text-white shadow-sm";
+    }
+
+    function saveDailyAttendance() {
+      const dateStr = document.getElementById("daily-date-picker").value;
+      const selectedDate = parseISODate(dateStr);
+
+      if (isWeekend(selectedDate)) {
+        showAlertModal("Dam olish kunlari (Shanba/Yakshanba) davomat saqlanmaydi!", "Taqiq bor");
+        return;
+      }
+
+      const activeStudents = state.students.filter(s => s.active);
+      const newDayRecords = {};
+
+      activeStudents.forEach(student => {
+        const statusEl = document.getElementById(`status-val-${student.student_id}`);
+        const noteEl = document.getElementById(`note-val-${student.student_id}`);
+
+        if (statusEl) {
+          newDayRecords[student.student_id] = {
+            status: statusEl.value || "Keldi",
+            note: noteEl ? noteEl.value : ""
+          };
+        }
+      });
+
+      saveAttendanceForDate(dateStr, newDayRecords);
+      showToast("Davomat muvaffaqiyatli saqlandi!");
+    }
+
+    /* ==========================================================================
+       6. OYLIK DAVOMAT (MONTHLY ATTENDANCE GRID) LOGIC
+       ========================================================================== */
+    function setMonthlyToCurrent() {
+      const today = new Date();
+      document.getElementById("monthly-select-month").value = today.getMonth();
+      document.getElementById("monthly-select-year").value = today.getFullYear();
+      renderMonthlyGrid();
+    }
+
+    function changeMonthlyDate(offsetMonths) {
+      let m = parseInt(document.getElementById("monthly-select-month").value);
+      let y = parseInt(document.getElementById("monthly-select-year").value);
+
+      m += offsetMonths;
+      if (m > 11) { m = 0; y++; }
+      if (m < 0) { m = 11; y--; }
+
+      document.getElementById("monthly-select-month").value = m;
+      document.getElementById("monthly-select-year").value = y;
+      renderMonthlyGrid();
+    }
+
+    function renderMonthlyGrid() {
+      const month = parseInt(document.getElementById("monthly-select-month").value);
+      const year = parseInt(document.getElementById("monthly-select-year").value);
+
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+      const headerRow = document.getElementById("monthly-grid-header-days");
+
+      let headerHtml = `
+        <th class="py-3 px-2 border-r border-slate-200 min-w-[40px]">T/R</th>
+        <th class="py-3 px-2 border-r border-slate-200 min-w-[80px]">Hona</th>
+        <th class="py-3 px-3 border-r border-slate-200 min-w-[220px] text-left">O‘quvchi Ism Familiyasi</th>
+      `;
+
+      for (let day = 1; day <= daysInMonth; day++) {
+        const dateObj = new Date(year, month, day);
+        const weekend = isWeekend(dateObj);
+        const dayClass = weekend ? "bg-slate-200 text-slate-500 font-normal" : "bg-slate-50 text-slate-700";
+        headerHtml += `<th class="py-2.5 px-1.5 border-r border-slate-200 min-w-[32px] text-center ${dayClass}">${day}</th>`;
+      }
+      headerRow.innerHTML = headerHtml;
+
+      const summaryWrap = document.getElementById("monthly-status-summary");
+      const activeStudents = sortStudentsByRoom(state.students.filter(s => s.active));
+      let presentTotal = 0;
+      let absentTotal = 0;
+      let excusedTotal = 0;
+
+      activeStudents.forEach((student) => {
+        for (let day = 1; day <= daysInMonth; day++) {
+          const dateObj = new Date(year, month, day);
+          if (isWeekend(dateObj)) continue;
+          const dateStr = formatDateISO(dateObj);
+          const record = (state.attendance[dateStr] || {})[student.student_id];
+          if (!record) continue;
+          if (record.status === "Keldi") presentTotal++;
+          else if (record.status === "Kelmadi") absentTotal++;
+          else if (record.status === "Sababli") excusedTotal++;
+        }
+      });
+
+      summaryWrap.innerHTML = `
+        <div class="monthly-status-card keldi">
+          <div class="value">${presentTotal}</div>
+          <div class="label">Keldi</div>
+        </div>
+        <div class="monthly-status-card kelmadi">
+          <div class="value">${absentTotal}</div>
+          <div class="label">Kelmadi</div>
+        </div>
+        <div class="monthly-status-card sababli">
+          <div class="value">${excusedTotal}</div>
+          <div class="label">Sababli</div>
+        </div>
+        <div class="monthly-status-card" style="background: linear-gradient(135deg, #e0f2fe, #dbeafe); color:#1d4ed8;">
+          <div class="value">${activeStudents.length}</div>
+          <div class="label">Faol</div>
+        </div>
+      `;
+
+      const tbody = document.getElementById("monthly-grid-tbody");
+      tbody.innerHTML = "";
+
+      if (activeStudents.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="${daysInMonth + 3}" class="py-8 text-center text-slate-400">Faol o'quvchilar yo'q</td></tr>`;
+        return;
+      }
+
+      activeStudents.forEach((student, index) => {
+        let rowHtml = `
+          <tr class="hover:bg-slate-50/80 transition border-b border-slate-100">
+            <td class="py-2.5 px-2 border-r border-slate-100 font-medium text-slate-400">${index + 1}</td>
+            <td class="py-2.5 px-2 border-r border-slate-100 font-semibold text-slate-700">${student.student_id}</td>
+            <td class="py-2.5 px-3 border-r border-slate-100 text-left">
+              <span class="font-medium text-slate-900">${student.first_name} ${student.last_name}</span>
+            </td>
+        `;
+
+        for (let day = 1; day <= daysInMonth; day++) {
+          const dateObj = new Date(year, month, day);
+          const dateStr = formatDateISO(dateObj);
+          const weekend = isWeekend(dateObj);
+
+          if (weekend) {
+            rowHtml += `<td class="py-2.5 px-1 border-r border-slate-100 bg-slate-100/70"></td>`;
+          } else {
+            const dayRecords = state.attendance[dateStr] || {};
+            const record = dayRecords[student.student_id];
+
+            let cellContent = "";
+            if (record) {
+              if (record.status === "Keldi") {
+                cellContent = `<span class="text-emerald-600 font-bold">✓</span>`;
+              } else if (record.status === "Kelmadi") {
+                cellContent = `<span class="text-rose-600 font-bold">✗</span>`;
+              } else if (record.status === "Sababli") {
+                cellContent = `<span class="text-amber-600 font-bold">S</span>`;
+              }
+            } else {
+              cellContent = `<span class="text-slate-300">-</span>`;
+            }
+            rowHtml += `<td class="py-2.5 px-1 border-r border-slate-100 text-center">${cellContent}</td>`;
+          }
+        }
+
+        rowHtml += `</tr>`;
+        tbody.insertAdjacentHTML("beforeend", rowHtml);
+      });
+    }
+
+    // Export Monthly Grid to Excel
+    function exportMonthlyToExcel() {
+      const monthIndex = parseInt(document.getElementById("monthly-select-month").value);
+      const year = parseInt(document.getElementById("monthly-select-year").value);
+      const monthName = getUzbekMonthName(monthIndex);
+      const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
+
+      const activeStudents = sortStudentsByRoom(state.students.filter(s => s.active));
+
+      // Build Headers
+      const headers = ["T/R", "Hona raqami", "Ismi", "Familiyasi", "Sinfi"];
+      for (let d = 1; d <= daysInMonth; d++) {
+        headers.push(`${d}`);
+      }
+
+      const rows = [headers];
+
+      activeStudents.forEach((student, index) => {
+        const row = [
+          index + 1,
+          student.student_id,
+          student.first_name,
+          student.last_name,
+          student.class
+        ];
+
+        for (let d = 1; d <= daysInMonth; d++) {
+          const dateObj = new Date(year, monthIndex, d);
+          if (isWeekend(dateObj)) {
+            row.push(""); // Weekend empty
+          } else {
+            const dateStr = formatDateISO(dateObj);
+            const record = (state.attendance[dateStr] || {})[student.student_id];
+            if (record) {
+              row.push(record.status === "Keldi" ? "Keldi" : (record.status === "Kelmadi" ? "Kelmadi" : "Sababli"));
+            } else {
+              row.push("-");
+            }
+          }
+        }
+        rows.push(row);
+      });
+
+      const worksheet = XLSX.utils.aoa_to_sheet(rows);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Oylik Davomat");
+
+      XLSX.writeFile(workbook, `Oylik_Davomat_${monthName}_${year}.xlsx`);
+      showToast("Excel fayli muvaffaqiyatli yuklab olindi!");
+    }
+
+    /* ==========================================================================
+       7. O‘QUVCHILAR PAGE LOGIC (ACTIVE & HISTORICAL SEPARATION)
+       ========================================================================== */
+    function switchStudentSubTab(subTab) {
+      const activeBtn = document.getElementById("student-tab-active");
+      const historicalBtn = document.getElementById("student-tab-historical");
+
+      const activeSection = document.getElementById("subtab-active-students");
+      const historicalSection = document.getElementById("subtab-historical-students");
+
+      if (subTab === "active") {
+        activeBtn.className = "py-3 px-5 font-semibold text-sm border-b-2 border-indigo-600 text-indigo-600 transition";
+        historicalBtn.className = "py-3 px-5 font-semibold text-sm border-b-2 border-transparent text-slate-500 hover:text-slate-700 transition";
+        activeSection.classList.remove("hidden");
+        historicalSection.classList.add("hidden");
+      } else {
+        historicalBtn.className = "py-3 px-5 font-semibold text-sm border-b-2 border-indigo-600 text-indigo-600 transition";
+        activeBtn.className = "py-3 px-5 font-semibold text-sm border-b-2 border-transparent text-slate-500 hover:text-slate-700 transition";
+        historicalSection.classList.remove("hidden");
+        activeSection.classList.add("hidden");
+      }
+      renderStudentsList();
+    }
+
+    function renderStudentsList() {
+      const activeStudents = sortStudentsByRoom(state.students.filter(s => s.active));
+      const historicalStudents = sortStudentsByRoom(state.students.filter(s => !s.active));
+
+      document.getElementById("count-active-tab").innerText = activeStudents.length;
+      document.getElementById("count-historical-tab").innerText = historicalStudents.length;
+
+      // Render Active Students Table
+      const activeTbody = document.getElementById("active-students-tbody");
+      activeTbody.innerHTML = "";
+
+      if (activeStudents.length === 0) {
+        activeTbody.innerHTML = `<tr><td colspan="7" class="py-8 text-center text-slate-400">Faol o'quvchilar yo'q</td></tr>`;
+      } else {
+        activeStudents.forEach((student, index) => {
+          // STRICT ORDER: T/R FIRST
+          const row = `
+            <tr class="hover:bg-slate-50 transition border-b border-slate-100">
+              <td class="py-3.5 px-4 text-center font-medium text-slate-400">${index + 1}</td>
+              <td class="py-3.5 px-4 font-semibold text-slate-700">${student.student_id}</td>
+              <td class="py-3.5 px-4">
+                <div class="font-medium text-slate-900">${student.first_name}</div>
+              </td>
+              <td class="py-3.5 px-4 font-medium text-slate-900">${student.last_name}</td>
+              <td class="py-3.5 px-4 text-slate-600">${student.class}</td>
+              <td class="py-3.5 px-4 font-mono text-slate-600 text-xs">${formatUzbekPhone(student.parent_phone)}</td>
+              <td class="py-3.5 px-4 text-right space-x-2">
+                <button type="button" class="profile-mini-btn" title="Profilni ko‘rish" aria-label="${student.first_name} ${student.last_name} profilini ko‘rish" onclick="openStudentProfile('${student.id}')">
+                  <i class="fa-solid fa-user"></i>
+                </button>
+                <button onclick="openEditStudentModal('${student.id}')" class="px-3 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold transition">
+                  <i class="fa-solid fa-pen mr-1"></i>Tahrirlash
+                </button>
+                <button onclick="deactivateStudent('${student.id}')" class="px-3 py-1 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg text-xs font-semibold transition">
+                  <i class="fa-solid fa-box-archive mr-1"></i>Tarixga o‘tkazish
+                </button>
+              </td>
+            </tr>
+          `;
+          activeTbody.insertAdjacentHTML("beforeend", row);
+        });
+      }
+
+      // Render Historical Students Table
+      const historicalTbody = document.getElementById("historical-students-tbody");
+      historicalTbody.innerHTML = "";
+
+      if (historicalStudents.length === 0) {
+        historicalTbody.innerHTML = `<tr><td colspan="8" class="py-8 text-center text-slate-400">Tarixiy o'quvchilar yo'q</td></tr>`;
+      } else {
+        historicalStudents.forEach((student, index) => {
+          const row = `
+            <tr class="hover:bg-slate-50 transition border-b border-slate-100">
+              <td class="py-3.5 px-4 text-center font-medium text-slate-400">${index + 1}</td>
+              <td class="py-3.5 px-4 font-semibold text-slate-700">${student.student_id}</td>
+              <td class="py-3.5 px-4 font-medium text-slate-900">${student.first_name}</td>
+              <td class="py-3.5 px-4 font-medium text-slate-900">${student.last_name}</td>
+              <td class="py-3.5 px-4 text-slate-600">${student.class}</td>
+              <td class="py-3.5 px-4 font-mono text-slate-600 text-xs">${formatUzbekPhone(student.parent_phone)}</td>
+              <td class="py-3.5 px-4 text-center">
+                <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-600">Nofaol / Tarixiy</span>
+              </td>
+              <td class="py-3.5 px-4 text-right">
+                <button type="button" class="profile-mini-btn mr-2" title="Profilni ko‘rish" aria-label="${student.first_name} ${student.last_name} profilini ko‘rish" onclick="openStudentProfile('${student.id}')">
+                  <i class="fa-solid fa-user"></i>
+                </button>
+                <button onclick="restoreStudent('${student.id}')" class="px-3 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded-lg text-xs font-semibold transition">
+                  <i class="fa-solid fa-rotate-left mr-1"></i>Qayta tiklash
+                </button>
+              </td>
+            </tr>
+          `;
+          historicalTbody.insertAdjacentHTML("beforeend", row);
+        });
+      }
+    }
+
+    // Modal Control: Add / Edit
+    function openAddStudentModal() {
+      document.getElementById("modal-title").innerText = "Yangi o‘quvchi qo‘shish";
+      document.getElementById("form-student-internal-id").value = "";
+      document.getElementById("form-student-id").value = "1-hona";
+      document.getElementById("form-birth-date").value = "";
+      document.getElementById("form-joined-date").value = formatDateISO(new Date());
+      document.getElementById("form-first-name").value = "";
+      document.getElementById("form-last-name").value = "";
+      document.getElementById("form-class").value = "9-A";
+      document.getElementById("form-parent-phone").value = "+998 ";
+      document.getElementById("form-student-phone").value = "";
+
+      document.getElementById("student-modal").classList.remove("hidden");
+      document.getElementById("student-modal").classList.add("flex");
+    }
+
+    function openEditStudentModal(internalId) {
+      const student = state.students.find(s => s.id === internalId);
+      if (!student) return;
+
+      document.getElementById("modal-title").innerText = "O‘quvchi ma'lumotlarini tahrirlash";
+      document.getElementById("form-student-internal-id").value = student.id;
+      document.getElementById("form-student-id").value = student.student_id || "1-hona";
+      document.getElementById("form-birth-date").value = student.birth_date || "";
+      document.getElementById("form-joined-date").value = student.joined_at || "";
+      document.getElementById("form-first-name").value = student.first_name;
+      document.getElementById("form-last-name").value = student.last_name;
+      document.getElementById("form-class").value = student.class;
+      document.getElementById("form-parent-phone").value = formatUzbekPhone(student.parent_phone);
+      document.getElementById("form-student-phone").value = formatUzbekPhone(student.student_phone);
+
+      document.getElementById("student-modal").classList.remove("hidden");
+      document.getElementById("student-modal").classList.add("flex");
+    }
+
+    function closeStudentModal() {
+      document.getElementById("student-modal").classList.add("hidden");
+      document.getElementById("student-modal").classList.remove("flex");
+    }
+
+    function openStudentProfile(studentId) {
+      const student = state.students.find(s => s.id === studentId);
+      if (!student) return;
+
+      const joinedDate = student.joined_at ? new Date(student.joined_at) : null;
+      const joinedDisplay = joinedDate ? `${joinedDate.getDate()}.${joinedDate.getMonth() + 1}.${joinedDate.getFullYear()}` : 'Kiritilmagan';
+      const birthDate = student.birth_date ? parseISODate(student.birth_date) : null;
+      const birthDisplay = birthDate ? `${formatBirthdayDate(birthDate)} (${getBirthdayInfo(student.birth_date).label})` : 'Kiritilmagan';
+      const statusText = student.active ? 'Faol yotoqxona o‘quvchisi' : 'Tarixiy o‘quvchi';
+      const leftDate = !student.active && student.left_at ? parseISODate(student.left_at) : null;
+      const leftDisplay = leftDate ? `${leftDate.getDate()}.${leftDate.getMonth() + 1}.${leftDate.getFullYear()}` : 'Kiritilmagan';
+      const profileDetails = [
+        `Ism familiya: ${student.first_name} ${student.last_name}`,
+        `Sinfi: ${student.class}`,
+        `Hona raqami: ${student.student_id}`,
+        `Tug‘ilgan kuni: ${birthDisplay}`,
+        `O‘quvchining telefoni: ${formatUzbekPhone(student.student_phone) || 'Kiritilmagan'}`,
+        `Ota-onasining telefoni: ${formatUzbekPhone(student.parent_phone) || 'Kiritilmagan'}`,
+        `Yotoqxonaga qo‘shilgan sana: ${joinedDisplay}`,
+        ...(!student.active ? [`Yotoqxonadan chiqib ketgan sana: ${leftDisplay}`] : []),
+        `Holati: ${statusText}`
+      ];
+
+      showAlertModal(
+        profileDetails.join("\n"),
+        'O‘quvchi profili'
+      );
+    }
+
+    function handleSaveStudent(event) {
+      event.preventDefault();
+
+      const internalId = document.getElementById("form-student-internal-id").value;
+      const studentId = document.getElementById("form-student-id").value.trim();
+      const firstName = document.getElementById("form-first-name").value.trim();
+      const lastName = document.getElementById("form-last-name").value.trim();
+      const studentClass = document.getElementById("form-class").value;
+      const parentPhone = formatUzbekPhone(document.getElementById("form-parent-phone").value);
+      const studentPhone = formatUzbekPhone(document.getElementById("form-student-phone").value);
+      const joinedAt = document.getElementById("form-joined-date").value;
+
+      if (internalId) {
+        // Edit existing student
+        const student = state.students.find(s => s.id === internalId);
+        if (student) {
+          const normalizedRoom = normalizeRoomNumber(studentId);
+          student.student_id = normalizedRoom;
+          student.first_name = firstName;
+          student.last_name = lastName;
+          student.class = studentClass;
+          student.parent_phone = parentPhone;
+          student.student_phone = studentPhone;
+          student.birth_date = document.getElementById("form-birth-date").value;
+          student.joined_at = joinedAt;
+          showToast("O‘quvchi ma'lumotlari yangilandi!");
+        }
+      } else {
+        // Add new student
+        const newStudent = {
+          id: "S" + Date.now(),
+          student_id: normalizeRoomNumber(studentId),
+          first_name: firstName,
+          last_name: lastName,
+          class: studentClass,
+          parent_phone: parentPhone,
+          student_phone: studentPhone,
+          birth_date: document.getElementById("form-birth-date").value,
+          joined_at: joinedAt,
+          active: true
+        };
+
+        state.students.push(newStudent);
+        showToast("Yangi o‘quvchi ro‘yxatga qo‘shildi!");
+      }
+
+      saveStudentsToStorage();
+      closeStudentModal();
+      renderStudentsList();
+    }
+
+    function deactivateStudent(internalId) {
+      const student = state.students.find(s => s.id === internalId);
+      if (!student) return;
+
+      student.active = false;
+      student.left_at = formatDateISO(new Date());
+      saveStudentsToStorage();
+      showToast(`${student.first_name} ${student.last_name} tarixiy o'quvchilar bo'limiga o'tkazildi!`, "fa-box-archive text-amber-400");
+      renderStudentsList();
+    }
+
+    function restoreStudent(internalId) {
+      const student = state.students.find(s => s.id === internalId);
+      if (!student) return;
+
+      student.active = true;
+      student.joined_at = formatDateISO(new Date());
+      delete student.left_at;
+      saveStudentsToStorage();
+      showToast(`${student.first_name} ${student.last_name} faol o'quvchilar safiga qaytarildi!`);
+      renderStudentsList();
+    }
+
+    /* ==========================================================================
+       8. HISOBOTLAR (REPORTS & EXCEL EXPORT) LOGIC
+       ========================================================================= */
+    function generateReport() {
+      const month = parseInt(document.getElementById("report-select-month").value);
+      const year = parseInt(document.getElementById("report-select-year").value);
+
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+      // We consider all students who have data or are currently active
+      const allStudents = sortStudentsByRoom(state.students);
+
+      let grandTotalPresent = 0;
+      let grandTotalAbsent = 0;
+      let grandTotalExcused = 0;
+
+      const reportRows = [];
+
+      allStudents.forEach((student, index) => {
+        let presentDays = 0;
+        let absentDays = 0;
+        let excusedDays = 0;
+
+        for (let d = 1; d <= daysInMonth; d++) {
+          const dateObj = new Date(year, month, d);
+          if (isWeekend(dateObj)) continue; // Exclude weekends from count
+
+          const dateStr = formatDateISO(dateObj);
+          const dayRecords = state.attendance[dateStr] || {};
+          const record = dayRecords[student.student_id];
+
+          if (record) {
+            if (record.status === "Keldi") presentDays++;
+            else if (record.status === "Kelmadi") absentDays++;
+            else if (record.status === "Sababli") excusedDays++;
+          }
+        }
+
+        const totalMarkedDays = presentDays + absentDays + excusedDays;
+        const percent = totalMarkedDays > 0 ? Math.round((presentDays / totalMarkedDays) * 100) : 0;
+
+        grandTotalPresent += presentDays;
+        grandTotalAbsent += absentDays;
+        grandTotalExcused += excusedDays;
+
+        reportRows.push({
+          student,
+          presentDays,
+          absentDays,
+          excusedDays,
+          percent
+        });
+      });
+
+      // Update Overall Summary Cards
+      const totalActive = state.students.filter(s => s.active).length;
+      document.getElementById("rep-total-students").innerText = totalActive;
+      document.getElementById("rep-total-present").innerText = grandTotalPresent;
+      document.getElementById("rep-total-absent").innerText = grandTotalAbsent;
+      document.getElementById("rep-total-excused").innerText = grandTotalExcused;
+
+      const grandTotalDays = grandTotalPresent + grandTotalAbsent + grandTotalExcused;
+      const grandPercent = grandTotalDays > 0 ? Math.round((grandTotalPresent / grandTotalDays) * 100) : 0;
+      document.getElementById("rep-overall-percent").innerText = `${grandPercent}%`;
+
+      // Render Individual Student Table (NO PARENT PHONE NUMBERS HERE)
+      const tbody = document.getElementById("report-students-tbody");
+      tbody.innerHTML = "";
+
+      if (reportRows.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="8" class="py-8 text-center text-slate-400">Hisobot ma'lumotlari topilmadi</td></tr>`;
+        return;
+      }
+
+      reportRows.forEach((item, index) => {
+        // STRICT REQUIREMENT: T/R ALWAYS BEFORE STUDENT ID
+        const row = `
+          <tr class="hover:bg-slate-50 transition border-b border-slate-100">
+            <td class="py-3.5 px-4 text-center font-medium text-slate-400">${index + 1}</td>
+            <td class="py-3.5 px-4 font-semibold text-slate-700">${item.student.student_id}</td>
+            <td class="py-3.5 px-4 font-medium text-slate-900">${item.student.first_name} ${item.student.last_name}</td>
+            <td class="py-3.5 px-4 text-slate-600">${item.student.class}</td>
+            <td class="py-3.5 px-4 text-center font-semibold text-emerald-600">${item.presentDays} kun</td>
+            <td class="py-3.5 px-4 text-center font-semibold text-rose-600">${item.absentDays} kun</td>
+            <td class="py-3.5 px-4 text-center font-semibold text-amber-600">${item.excusedDays} kun</td>
+            <td class="py-3.5 px-4 text-center">
+              <span class="px-2.5 py-1 rounded-lg text-xs font-bold ${item.percent >= 85 ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}">
+                ${item.percent}%
+              </span>
+            </td>
+          </tr>
+        `;
+        tbody.insertAdjacentHTML("beforeend", row);
+      });
+    }
+
+    // Export Reports to Excel (EXCLUDING PARENT PHONE NUMBERS)
+    function exportReportToExcel() {
+      const month = parseInt(document.getElementById("report-select-month").value);
+      const year = parseInt(document.getElementById("report-select-year").value);
+      const monthName = getUzbekMonthName(month);
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+      const headers = [
+        "T/R",
+        "Hona raqami",
+        "Ism Familiya",
+        "Sinfi",
+        "Kelgan kunlar",
+        "Kelmagan kunlar",
+        "Sababli kunlar",
+        "Davomat Foizi (%)"
+      ];
+
+      const rows = [
+        [`YOTOQXONA DAVOMAT HISOBOTI - ${monthName.toUpperCase()} ${year}`],
+        [""],
+        headers
+      ];
+
+      sortStudentsByRoom(state.students).forEach((student, index) => {
+        let presentDays = 0;
+        let absentDays = 0;
+        let excusedDays = 0;
+
+        for (let d = 1; d <= daysInMonth; d++) {
+          const dateObj = new Date(year, month, d);
+          if (isWeekend(dateObj)) continue;
+
+          const dateStr = formatDateISO(dateObj);
+          const dayRecords = state.attendance[dateStr] || {};
+          const record = dayRecords[student.student_id];
+
+          if (record) {
+            if (record.status === "Keldi") presentDays++;
+            else if (record.status === "Kelmadi") absentDays++;
+            else if (record.status === "Sababli") excusedDays++;
+          }
+        }
+
+        const totalDays = presentDays + absentDays + excusedDays;
+        const percent = totalDays > 0 ? Math.round((presentDays / totalDays) * 100) : 0;
+
+        // NO PHONE NUMBER ADDED TO EXCEL EXPORT REPORT
+        rows.push([
+          index + 1,
+          student.student_id,
+          `${student.first_name} ${student.last_name}`,
+          student.class,
+          presentDays,
+          absentDays,
+          excusedDays,
+          `${percent}%`
+        ]);
+      });
+
+      const worksheet = XLSX.utils.aoa_to_sheet(rows);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Oylik Hisobot");
+
+      XLSX.writeFile(workbook, `Oylik_Davomat_Hisoboti_${monthName}_${year}.xlsx`);
+      showToast("Oylik hisobot Excelga yuklab olindi!");
+    }
+
+    /* ==========================================================================
+       9. INITIALIZATION
+       ========================================================================== */
+    window.onload = async function() {
+      await initStorage();
+
+      // Set initial dates
+      const today = new Date();
+      document.getElementById("daily-date-picker").value = formatDateISO(today);
+      document.getElementById("monthly-select-month").value = today.getMonth();
+      document.getElementById("monthly-select-year").value = today.getFullYear();
+      document.getElementById("report-select-month").value = today.getMonth();
+      document.getElementById("report-select-year").value = today.getFullYear();
+
+      // Initial tab load
+      switchTab('dashboard');
+      await initializeCloudSync();
+    };
+  </script>
+</body>
+</html>

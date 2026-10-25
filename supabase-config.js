@@ -1,0 +1,2 @@
+window.DORM_SUPABASE_URL = "";
+window.DORM_SUPABASE_ANON_KEY = "";
