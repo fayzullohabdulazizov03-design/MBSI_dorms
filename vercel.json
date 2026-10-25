@@ -1,8 +1,9 @@
+
 {
   "rewrites": [
     {
       "source": "/",
-      "destination": "/maktab_yotoqxona_davomat_tizimi%20(2).html"
+      "destination": "/index.html"
     }
   ]
 }
