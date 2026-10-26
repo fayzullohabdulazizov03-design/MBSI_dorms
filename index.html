@@ -117,7 +117,7 @@
     }
     .monthly-summary {
       display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
+      grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: 14px;
       margin-top: 8px;
     }
@@ -2039,7 +2039,6 @@
         return false;
       });
 
-      let presentTotal = 0;
       let absentTotal = 0;
       let excusedTotal = 0;
 
@@ -2050,16 +2049,15 @@
           const dateStr = formatDateISO(dateObj);
           const record = (state.attendance[dateStr] || {})[student.student_id];
           if (!record) continue;
-          if (record.status === "Keldi") presentTotal++;
-          else if (record.status === "Kelmadi") absentTotal++;
+          if (record.status === "Kelmadi") absentTotal++;
           else if (record.status === "Sababli") excusedTotal++;
         }
       });
 
       summaryWrap.innerHTML = `
-        <div class="monthly-status-card keldi">
-          <div class="value">${presentTotal}</div>
-          <div class="label">Keldi</div>
+        <div class="monthly-status-card" style="background: linear-gradient(135deg, #e0f2fe, #dbeafe); color:#1d4ed8;">
+          <div class="value">${filteredStudents.length}</div>
+          <div class="label">Faol</div>
         </div>
         <div class="monthly-status-card kelmadi">
           <div class="value">${absentTotal}</div>
@@ -2068,10 +2066,6 @@
         <div class="monthly-status-card sababli">
           <div class="value">${excusedTotal}</div>
           <div class="label">Sababli</div>
-        </div>
-        <div class="monthly-status-card" style="background: linear-gradient(135deg, #e0f2fe, #dbeafe); color:#1d4ed8;">
-          <div class="value">${filteredStudents.length}</div>
-          <div class="label">Faol</div>
         </div>
       `;
 
